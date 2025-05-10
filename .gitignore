@@ -3,6 +3,9 @@
 # dependencies
 node_modules/
 
+android
+
+.vscode
 # Expo
 .expo/
 dist/
