@@ -1,46 +1,44 @@
-import * as React from 'react';
-import { View, StyleSheet, Alert, Text, TouchableOpacity } from 'react-native';
-import { TextInput, Button } from 'react-native-paper';
-import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import * as React from 'react'
+import { View, StyleSheet, Alert, Text, TouchableOpacity } from 'react-native'
+import { TextInput, Button } from 'react-native-paper'
+import { useRouter } from 'expo-router'
+import { useSession } from '@/contexts/auth'
 
-export default function Index() {
-  const [uid, setUid] = React.useState('81fbdec3');
-  const [password, setPassword] = React.useState('15022004');
-  const [loading, setLoading] = React.useState(false);
-
+export default function LoginPage() {
   const router = useRouter()
+  const { signIn } = useSession()
+
+  const [uid, setUid] = React.useState('81fbdec3')
+  const [password, setPassword] = React.useState('15022004')
+  const [loading, setLoading] = React.useState(false)
 
   const handleLogin = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      const response = await fetch('http://10.0.2.2:3000/login', {
+      const response = await fetch('https://activmotiv.devsoleo.fr/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ uid, password })
-      });
+      })
 
-      const data = await response.json();
+      const data = await response.json()
 
       if (response.ok) {
-        const token = data.token;
-        // await SecureStore.setItemAsync('jwt_token', token);
-        console.log('JWT Token:', token);
-        Alert.alert('Succès', 'Connexion réussie !');
-        // redirection possible ici
+        signIn(data.token)
+        Alert.alert('Succès', 'Connexion réussie !')
         router.replace("/(tabs)/home")
       } else {
-        Alert.alert('Erreur', data.error ?? 'Identifiants invalides');
+        Alert.alert('Erreur', data.error ?? 'Identifiants invalides')
       }
     } catch (error) {
-      Alert.alert('Erreur', 'Une erreur est survenue');
-      console.error(error);
+      Alert.alert('Erreur', 'Une erreur est survenue')
+      console.error(error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleSignupRedirect = () => router.replace('/(auth)/register')
 
@@ -77,7 +75,7 @@ export default function Index() {
         <Text style={styles.signupText}>Pas encore inscrit ?</Text>
       </TouchableOpacity>
     </View>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -101,4 +99,4 @@ const styles = StyleSheet.create({
     color: '#1e90ff',
     marginBottom: 24,
   },
-});
+})
