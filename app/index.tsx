@@ -1,17 +1,11 @@
-import * as React from 'react';
-import { View } from "react-native";
-import { TextInput } from 'react-native-paper';
+import React from 'react';
+import { Redirect } from 'expo-router';
+import { View } from 'react-native';
 
-export default function Index() {
-  const [text, setText] = React.useState("")
-
+export default function Home() {
   return (
-    <View>
-      <TextInput
-        label="Email"
-        value={text}
-        onChangeText={text => setText(text)}
-      />
+    <View style={{ flex:1, justifyContent:'center', alignItems:'center' }}>
+      <Redirect href="/(auth)/login" />
     </View>
   );
 }
