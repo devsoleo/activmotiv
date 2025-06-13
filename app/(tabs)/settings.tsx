@@ -1,46 +1,58 @@
-import { BottomNavigation, Text, TouchableRipple, Icon, Button, Appbar, Divider } from 'react-native-paper';
+import { useRouter } from 'expo-router'
+import { View, StyleSheet } from 'react-native'
+import { Text, Divider, List } from 'react-native-paper'
+
 import { useSession } from '@/contexts/auth'
-import { View } from 'react-native';
-import { useRouter } from 'expo-router';
 
 export default function SettingsScreen() {
   const { signOut } = useSession()
   const router = useRouter()
+
   return (
-    <>
-      <Appbar.Header>
-        <Appbar.BackAction onPress={() => {router.replace("./home")}} />
-        <Appbar.Content title="Paramètres" />
-      </Appbar.Header>
-      <View>
-          <TouchableRipple
-            onPress={() => {}}
-            rippleColor="rgba(0, 0, 0, .06)"
-          >
-            <Text variant="titleMedium" style={{ paddingTop: 15, paddingBottom: 15, paddingLeft: 15 }}>Informations étude</Text>
-          </TouchableRipple>
+    <View style={{ flex: 1}}>
+        <Text variant="headlineLarge" style={styles.title}>Paramètres</Text>
+
+        <List.Item
+          onPress={() => router.push("./(settings)/profile")}
+          title={<Text variant="titleMedium" style={styles.menu}>Mon profil</Text>}
+          left={props => <List.Icon {...props} icon="account" />}
+        />
         <Divider />
-          <TouchableRipple
-            onPress={() => {}}
-            rippleColor="rgba(0, 0, 0, .06)"
-          >
-            <Text variant="titleMedium" style={{ paddingTop: 15, paddingBottom: 15, paddingLeft: 15 }}>Contacts</Text>
-          </TouchableRipple>
+        <List.Item
+          onPress={() => router.push("./(settings)/about")}
+          title={<Text variant="titleMedium" style={styles.menu}>Informations étude</Text>}
+          left={props => <List.Icon {...props} icon="rocket-outline" />}
+        />
         <Divider />
-          <TouchableRipple
-            onPress={() => {}}
-            rippleColor="rgba(0, 0, 0, .06)"
-          >
-            <Text variant="titleMedium" style={{ paddingTop: 15, paddingBottom: 15, paddingLeft: 15 }}>Licences Open-source</Text>
-          </TouchableRipple>
+        <List.Item
+          onPress={() => router.push("./(settings)/contacts")}
+          title={<Text variant="titleMedium" style={styles.menu}>Contacts</Text>}
+          left={props => <List.Icon {...props} icon="contacts" />}
+        />
         <Divider />
-          <TouchableRipple
-            onPress={() => console.log('Pressed')}
-            rippleColor="rgba(255, 0, 0, .06)"
-          >
-            <Text variant="titleMedium" style={{ paddingTop: 15, paddingBottom: 15, paddingLeft: 15, color: "red", textAlign: 'center' }} onPress={signOut}>Se déconnecter</Text>
-          </TouchableRipple>
-      </View>
-    </>
+        <List.Item
+          onPress={() => router.push("./(settings)/licenses")}
+          title={<Text variant="titleMedium" style={styles.menu}>Licences Open-source</Text>}
+          left={props => <List.Icon {...props} icon="license" />}
+        />
+        <Divider />
+        <List.Item
+          onPress={() => router.push("./(settings)/report")}
+          title={<Text variant="titleMedium" style={styles.menu}>Signaler un bug</Text>}
+          left={props => <List.Icon {...props} icon="bug" />}
+        />
+        <Divider />
+        <List.Item
+          onPress={signOut}
+          title={<Text variant="titleMedium" style={[styles.menu, { color: "#EF5350" }]}>Se déconnecter</Text>}
+          left={props => <List.Icon {...props} color={"#EF5350"} icon="logout" />}
+        />
+        <Divider />
+    </View>
   )
 }
+
+const styles = StyleSheet.create({
+  title: { textAlign: 'center', paddingTop: 45, paddingBottom: 15 },
+  menu: { paddingTop: 15, paddingBottom: 15, paddingLeft: 15 },
+})

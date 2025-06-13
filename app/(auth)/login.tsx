@@ -1,19 +1,21 @@
 import * as React from 'react'
-import { View, StyleSheet, Alert, Text, TouchableOpacity } from 'react-native'
-import { TextInput, Button } from 'react-native-paper'
+import { View, StyleSheet, Alert, TouchableOpacity, Image } from 'react-native'
+import { TextInput, Button, Text } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { useSession } from '@/contexts/auth'
-
+import { Dimensions } from 'react-native';
 export default function LoginPage() {
   const router = useRouter()
   const { signIn } = useSession()
 
   const [uid, setUid] = React.useState('81fbdec3')
   const [password, setPassword] = React.useState('15022004')
+  const [isPasswordSecure, setIsPasswordSecure] = React.useState(true);
   const [loading, setLoading] = React.useState(false)
 
   const handleLogin = async () => {
     setLoading(true)
+
     try {
       const response = await fetch('https://activmotiv.devsoleo.fr/login', {
         method: 'POST',
@@ -27,8 +29,8 @@ export default function LoginPage() {
 
       if (response.ok) {
         signIn(data.token)
-        Alert.alert('Succès', 'Connexion réussie !')
-        router.replace("/(tabs)/home")
+        console.log("Connexion réussie !")
+        router.replace("/(tabs)")
       } else {
         Alert.alert('Erreur', data.error ?? 'Identifiants invalides')
       }
@@ -41,10 +43,24 @@ export default function LoginPage() {
   }
 
   const handleSignupRedirect = () => router.replace('/(auth)/register')
+  const screenWidth = Dimensions.get('window').width
 
   return (
     <View style={styles.wrapper}>
+
       <View style={styles.container}>
+        <Image
+          style={{
+            width: screenWidth,
+            height: undefined,
+            aspectRatio: 3,
+            resizeMode: 'contain',
+            alignSelf: 'center',
+            marginBottom: 45,
+          }}
+          source={require("@/assets/images/activmotiv.png")}
+        />
+        <Text variant="headlineLarge" style={{ textAlign: 'center', marginBottom: 45 }}>Se connecter</Text>
         <TextInput
           label="Identifiant"
           value={uid}
@@ -57,7 +73,8 @@ export default function LoginPage() {
           label="Mot de passe"
           value={password}
           onChangeText={setPassword}
-          secureTextEntry
+          secureTextEntry={isPasswordSecure}
+          right={<TextInput.Icon onPress={() => { isPasswordSecure ? setIsPasswordSecure(false) : setIsPasswordSecure(true) }} icon="eye" />}
           style={styles.input}
         />
         <Button
@@ -72,7 +89,7 @@ export default function LoginPage() {
       </View>
 
       <TouchableOpacity onPress={handleSignupRedirect}>
-        <Text style={styles.signupText}>Pas encore inscrit ?</Text>
+        <Text style={styles.signupText}>Première connexion ?</Text>
       </TouchableOpacity>
     </View>
   )
@@ -97,6 +114,6 @@ const styles = StyleSheet.create({
   signupText: {
     textAlign: 'center',
     color: '#1e90ff',
-    marginBottom: 24,
+    marginBottom: 64,
   },
 })
