@@ -38,7 +38,8 @@ export default function Register() {
           value={uid}
           onChangeText={setUid}
           autoCapitalize="none"
-          keyboardType="email-address"
+          right={<TextInput.Affix text={uid.length + "/8"} />}
+          maxLength={8}
           style={styles.input}
         />
         <TextInput
@@ -46,7 +47,7 @@ export default function Register() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry={isPasswordSecure}
-          right={<TextInput.Icon onPress={() => { isPasswordSecure ? setIsPasswordSecure(false) : setIsPasswordSecure(true) }} icon="eye" />}
+          right={<TextInput.Icon onPress={() => { isPasswordSecure ? setIsPasswordSecure(false) : setIsPasswordSecure(true) }} icon={isPasswordSecure ? "eye" : "eye-off" } />}
           style={styles.input}
         />
         <TextInput
@@ -54,7 +55,7 @@ export default function Register() {
           value={passwordConfirm}
           onChangeText={setPasswordConfirm}
           secureTextEntry={isPasswordConfirmSecure}
-          right={<TextInput.Icon onPress={() => { isPasswordConfirmSecure ? setIsPasswordConfirmSecure(false) : setIsPasswordConfirmSecure(true) }} icon="eye" />}
+          right={<TextInput.Icon onPress={() => { isPasswordConfirmSecure ? setIsPasswordConfirmSecure(false) : setIsPasswordConfirmSecure(true) }} icon={isPasswordConfirmSecure ? "eye" : "eye-off" } />}
           style={styles.input}
         />
         <Button

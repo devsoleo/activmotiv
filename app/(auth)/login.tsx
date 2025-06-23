@@ -3,7 +3,8 @@ import { View, StyleSheet, Alert, TouchableOpacity, Image } from 'react-native'
 import { TextInput, Button, Text } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { useSession } from '@/contexts/auth'
-import { Dimensions } from 'react-native';
+import { Dimensions } from 'react-native'
+
 export default function LoginPage() {
   const router = useRouter()
   const { signIn } = useSession()
@@ -17,7 +18,7 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const response = await fetch('https://activmotiv.devsoleo.fr/login', {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -32,7 +33,7 @@ export default function LoginPage() {
         console.log("Connexion réussie !")
         router.replace("/(tabs)")
       } else {
-        Alert.alert('Erreur', data.error ?? 'Identifiants invalides')
+        Alert.alert('Erreur', 'Identifiants invalides')
       }
     } catch (error) {
       Alert.alert('Erreur', 'Une erreur est survenue')
@@ -66,7 +67,8 @@ export default function LoginPage() {
           value={uid}
           onChangeText={setUid}
           autoCapitalize="none"
-          keyboardType="email-address"
+          right={<TextInput.Affix text={uid.length + "/8"} />}
+          maxLength={8}
           style={styles.input}
         />
         <TextInput
@@ -74,7 +76,7 @@ export default function LoginPage() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry={isPasswordSecure}
-          right={<TextInput.Icon onPress={() => { isPasswordSecure ? setIsPasswordSecure(false) : setIsPasswordSecure(true) }} icon="eye" />}
+          right={<TextInput.Icon onPress={() => { isPasswordSecure ? setIsPasswordSecure(false) : setIsPasswordSecure(true) }} icon={isPasswordSecure ? "eye" : "eye-off" } />}
           style={styles.input}
         />
         <Button
@@ -90,6 +92,7 @@ export default function LoginPage() {
 
       <TouchableOpacity onPress={handleSignupRedirect}>
         <Text style={styles.signupText}>Première connexion ?</Text>
+        <Text style={styles.signupText}>{process.env.EXPO_PUBLIC_API_URL}</Text>
       </TouchableOpacity>
     </View>
   )

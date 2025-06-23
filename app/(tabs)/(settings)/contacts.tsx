@@ -16,13 +16,13 @@ export default function Contacts() {
         title="Julie Boiché - julie.boiche@umontpellier.fr"
         description="Directrice de thèse"
         onPress={() => Linking.openURL('mailto:julie.boiche@umontpellier.fr')}
-        left={props => <List.Icon {...props} icon="account-school" />}
+        left={props => <List.Icon {...props} icon="account" />}
       />
       <List.Item
         title="Rémy Dadier - remy.dadier@umontpellier.fr"
-        description="Chef de projet"
+        description="Doctorant - Chef de projet"
         onPress={() => Linking.openURL('mailto:remy.dadier@umontpellier.fr')}
-        left={props => <List.Icon {...props} icon="account-school" />}
+        left={props => <List.Icon {...props} icon="account" />}
       />
       <List.Item
         title="Noa Portelli - devsoleo@protonmail.com"

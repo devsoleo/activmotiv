@@ -1,21 +1,34 @@
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
-import { ScrollView, Image, StyleSheet, FlatList,  Dimensions } from 'react-native'
+import { ScrollView, Image, StyleSheet, FlatList,  Dimensions, TouchableOpacity  } from 'react-native'
 import { Appbar, TextInput, Text, Button } from 'react-native-paper'
 
-import { illustrationsList } from '@/constants/illustrations'
+import { Buffer } from 'buffer';
+import { illustrationsList } from '@/constants/images'
+import { useSession } from '@/contexts/auth'
 
 export default function Profile() {
   const router = useRouter()
-
+  const { session } = useSession()
   const [numColumns, setNumColumns] = useState(3)
 
-  const margin = 4;
-  const padding = 8;
+  const [password, setPassword] = useState('')
+  const [passwordConfirm, setPasswordConfirm] = useState('')
+  const [isPasswordSecure, setIsPasswordSecure] = useState(true)
+  const [isPasswordConfirmSecure, setIsPasswordConfirmSecure] = useState(true)
+
+  let uid = ""
+  if (session != null && session != undefined) uid = JSON.parse(Buffer.from(session.split('.')[1], 'base64').toString())["uid"]
+
+  const margin = 4
+  const padding = 8
 
   const imageSize = (Dimensions.get('window').width - (padding * 2 + margin * 2 * numColumns)) / numColumns
 
   const renderItem = ({ item }) => (
+    <TouchableOpacity 
+      onPress={() => router.push(`/(tabs)/(settings)/(profile)/note_image/${item.id}`)}
+    >
     <Image
       source={item.source}
       style={[
@@ -28,36 +41,42 @@ export default function Profile() {
         },
       ]}
     />
-  );
+    </TouchableOpacity>
+  )
 
   return (
-    <ScrollView>
+    <ScrollView keyboardShouldPersistTaps="always">
       <Appbar.Header>
         <Appbar.BackAction onPress={() => {router.back()}} />
         <Appbar.Content title="Mon profil" />
       </Appbar.Header>
-        <Text variant="titleLarge" style={styles.title}>Mes informations</Text>
-        <Text variant="titleMedium" style={styles.title}>Identifiant</Text>
+        <Text variant="titleMedium" style={[styles.title, { marginTop: 16 }]}>Identifiant</Text>
         <TextInput
-          value={"azeaeazeaez"}
-          readOnly
+          value={uid}
+          disabled
           style={{ margin: 16 }}
         />
-        <Text variant="titleMedium" style={styles.title}>Mot de passe</Text>
+        {/* <Text variant="titleMedium" style={styles.title}>Modifier mon mot de passe</Text>
         <TextInput
-          label="Mot de passe"
-          secureTextEntry
+          label="Nouveau mot de passe"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={isPasswordSecure}
+          right={<TextInput.Icon onPress={() => { isPasswordSecure ? setIsPasswordSecure(false) : setIsPasswordSecure(true) }} icon={isPasswordSecure ? "eye" : "eye-off" } />}
           style={{ margin: 16 }}
         />
         <TextInput
           label="Confirmer le mot de passe"
-          secureTextEntry
+          value={passwordConfirm}
+          onChangeText={setPasswordConfirm}
+          secureTextEntry={isPasswordConfirmSecure}
+          right={<TextInput.Icon onPress={() => { isPasswordConfirmSecure ? setIsPasswordConfirmSecure(false) : setIsPasswordConfirmSecure(true) }} icon={isPasswordConfirmSecure ? "eye" : "eye-off" } />}
           style={{ margin: 16 }}
         />
-        <Button mode="contained" style={{ margin: 16 }}>
+        <Button mode="outlined" disabled={passwordConfirm.length == 0 || password.length == 0} style={{ margin: 16 }}>
           Modifier mon mot de passe
-        </Button>
-        <Text variant="titleLarge" style={styles.title}>Mes photos</Text>
+        </Button> */}
+        <Text variant="titleMedium" style={styles.title}>Mes images</Text>
         <FlatList
           data={illustrationsList}
           renderItem={renderItem}
@@ -71,6 +90,6 @@ export default function Profile() {
 }
 
 const styles = StyleSheet.create({
-  title: { margin: 16 },
+  title: { marginLeft: 16 },
   image: { borderRadius: 8 },
 })

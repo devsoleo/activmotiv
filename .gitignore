@@ -3,14 +3,13 @@
 # dependencies
 node_modules/
 
-android
-
 .vscode
 # Expo
 .expo/
 dist/
 web-build/
 expo-env.d.ts
+.idea
 
 # Native
 .kotlin/
@@ -40,3 +39,6 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+
+credentials.json
+.env

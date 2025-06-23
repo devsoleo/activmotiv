@@ -1,4 +1,4 @@
-export const illustrationsList = [
+const illustrationsList = [
   { id: '1', source: require("@/assets/images/illustrations/positive/POS_1.jpg") },
   { id: '2', source: require("@/assets/images/illustrations/positive/POS_2.jpg") },
   { id: '3', source: require("@/assets/images/illustrations/positive/POS_3.jpg") },
@@ -30,4 +30,22 @@ export const illustrationsList = [
   { id: '29', source: require("@/assets/images/illustrations/sport/AP_13.jpg") },
   { id: '30', source: require("@/assets/images/illustrations/sport/AP_14.jpg") },
   { id: '31', source: require("@/assets/images/illustrations/sport/AP_15.jpg") },
-];
+]
+
+const valenceList = [
+  { id: '1', source: require("@/assets/images/sam/valence_1.png") },
+  { id: '2', source: require("@/assets/images/sam/valence_2.png") },
+  { id: '3', source: require("@/assets/images/sam/valence_3.png") },
+  { id: '4', source: require("@/assets/images/sam/valence_4.png") },
+  { id: '5', source: require("@/assets/images/sam/valence_5.png") }
+]
+
+const arousalList = [
+  { id: '1', source: require("@/assets/images/sam/arousal_1.png") },
+  { id: '2', source: require("@/assets/images/sam/arousal_2.png") },
+  { id: '3', source: require("@/assets/images/sam/arousal_3.png") },
+  { id: '4', source: require("@/assets/images/sam/arousal_4.png") },
+  { id: '5', source: require("@/assets/images/sam/arousal_5.png") }
+]
+
+export { illustrationsList, valenceList, arousalList }

@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router'
-import { View, StyleSheet } from 'react-native'
+import { View, StyleSheet, Linking } from 'react-native'
 import { Text, Divider, List } from 'react-native-paper'
 
 import { useSession } from '@/contexts/auth'
@@ -37,7 +37,7 @@ export default function SettingsScreen() {
         />
         <Divider />
         <List.Item
-          onPress={() => router.push("./(settings)/report")}
+          onPress={() => Linking.openURL("https://google.com")}
           title={<Text variant="titleMedium" style={styles.menu}>Signaler un bug</Text>}
           left={props => <List.Icon {...props} icon="bug" />}
         />
