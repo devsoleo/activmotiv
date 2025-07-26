@@ -42,3 +42,4 @@ app-example
 
 credentials.json
 .env
+*.keystore

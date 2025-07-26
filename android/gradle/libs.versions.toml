@@ -1,0 +1,18 @@
+[versions]
+kotlin = "2.0.0"
+runtimeAndroid = "1.8.3"
+storage = "1.4.2"
+storageVersion = "1.5.0"
+foundationAndroid = "1.8.3"
+foundationLayoutAndroid = "1.8.3"
+[libraries]
+androidx-runtime-android = { group = "androidx.compose.runtime", name = "runtime-android", version.ref = "runtimeAndroid" }
+androidx-storage = { group = "androidx.test.services", name = "storage", version.ref = "storage" }
+storage = { group = "androidx.test.services", name = "storage", version.ref = "storageVersion" }
+androidx-foundation-android = { group = "androidx.compose.foundation", name = "foundation-android", version.ref = "foundationAndroid" }
+androidx-foundation-layout-android = { group = "androidx.compose.foundation", name = "foundation-layout-android", version.ref = "foundationLayoutAndroid" }
+
+[plugins]
+org-jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

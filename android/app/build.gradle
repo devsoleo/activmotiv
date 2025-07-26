@@ -1,3 +1,8 @@
+plugins {
+   // Existing plugins
+   alias(libs.plugins.compose.compiler)
+}
+
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
@@ -102,7 +107,21 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+			storeFile file(MYAPP_UPLOAD_STORE_FILE)
+			storePassword MYAPP_UPLOAD_STORE_PASSWORD
+			keyAlias MYAPP_UPLOAD_KEY_ALIAS
+			keyPassword MYAPP_UPLOAD_KEY_PASSWORD
+        }
     }
+
+    buildFeatures {
+        compose true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.4.5"
+    }
+
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
@@ -110,7 +129,7 @@ android {
         release {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
@@ -125,6 +144,11 @@ android {
     androidResources {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
     }
+}
+
+composeCompiler {
+    reportsDestination = layout.buildDirectory.dir("compose_compiler")
+    stabilityConfigurationFile = rootProject.layout.projectDirectory.file("stability_config.conf")
 }
 
 // Apply static values from `gradle.properties` to the `android.packagingOptions`
@@ -150,6 +174,11 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+    implementation libs.androidx.runtime.android
+    implementation libs.androidx.storage
+    implementation libs.storage
+    implementation libs.androidx.foundation.android
+    implementation libs.androidx.foundation.layout.android
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";
@@ -174,4 +203,6 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    implementation 'androidx.activity:activity-compose:1.10.1'
 }
