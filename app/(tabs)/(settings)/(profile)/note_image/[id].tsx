@@ -5,7 +5,7 @@ import { Appbar, IconButton } from 'react-native-paper'
 import { useSession } from '@/contexts/auth'
 import { illustrationsList, arousalList, valenceList } from '@/constants/images'
 
-export default function Note() {
+export default function NoteImage() {
   const router = useRouter()
   const { session } = useSession()
   const { id } = useLocalSearchParams()

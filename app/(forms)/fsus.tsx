@@ -1,0 +1,85 @@
+import { useState } from 'react';
+import { View, StyleSheet, ScrollView } from 'react-native'
+import { Text, Portal, Modal, Button,  Card, IconButton, RadioButton } from 'react-native-paper'
+import { questionsList } from '@/constants/fsus'
+import { useSession } from '@/contexts/auth'
+
+const containerStyle = {backgroundColor: 'white', margin: 20, padding: 24, borderRadius: 18};
+
+export default function FsusScreen() {
+  const [visible, setVisible] = useState(true);
+  const { session } = useSession()
+
+  const [noteId, setNoteId] = useState(Number(0))
+  const [note, setNote] = useState(1)
+  const hideModal = () => setVisible(false);
+
+  return (
+    <View style={{ flex: 1}}>
+      <Text variant="headlineLarge" style={styles.title}>Questionnaire F-SUS</Text>
+      <Portal>
+        <Modal visible={visible} contentContainerStyle={containerStyle}>
+          <Text variant='titleLarge' style={{ marginBottom: 12 }}>Information importante</Text>
+          <Text>
+            Lisez attentivement chaque phrase et répondez sur l'échelle située en dessous en sélectionnant un nombre correspondant le mieux à ce que vous pensez. 1 = pas du tout d'accord à 5 = tout à fait d'accord.
+          </Text>
+          <Button style={{ marginTop: 18 }} onPress={hideModal}>Commencer le questionnaire</Button>
+        </Modal>
+      </Portal>
+
+      <ScrollView>
+        {questionsList.map((item) => (
+          <Card style={{ margin: 12 }} key={item.id}>
+            <Card.Content style={{ alignItems: 'center' }}>
+              <Text variant="titleMedium" >Question : {item.id}/{questionsList.length}</Text>
+              <Text variant="titleMedium" style={{ textAlign: 'center' }}>{item.text}</Text>
+
+              <RadioButton.Group onValueChange={value => setNote(Number(value))} value={String(note)}>
+                <View style={styles.radioGroup}>
+                  <View style={[styles.radioItem, {marginTop: -32}]}>
+                    <Text style={styles.radioLabel}>Pas du tout d'accord</Text>
+                    <RadioButton value="1" />
+                  </View>
+                  <View style={styles.radioItem}>
+                    <Text style={styles.radioLabel}> </Text>
+                    <RadioButton value="2" />
+                  </View>
+                  <View style={styles.radioItem}>
+                    <Text style={styles.radioLabel}> </Text>
+                    <RadioButton value="3" />
+                  </View>
+                  <View style={styles.radioItem}>
+                    <Text style={styles.radioLabel}> </Text>
+                    <RadioButton value="4" />
+                  </View>
+                  <View style={[styles.radioItem, {marginTop: -16}]}>
+                    <Text style={styles.radioLabel}>Tout à fait d'accord</Text>
+                    <RadioButton value="5" />
+                  </View>
+                </View>
+              </RadioButton.Group>
+            </Card.Content>
+          </Card>
+        ))}
+      </ScrollView>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  title: { textAlign: 'center', paddingTop: 45, paddingBottom: 15 },
+  text: { paddingBottom: 6, paddingTop: 6 },
+  radioGroup: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 50,
+  },
+  radioItem: {
+    alignItems: 'center',
+  },
+  radioLabel: {
+    marginBottom: 4,
+    textAlign: 'center',
+    width: 65,
+  },
+})

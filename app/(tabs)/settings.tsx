@@ -19,6 +19,12 @@ export default function SettingsScreen() {
         />
         <Divider />
         <List.Item
+          onPress={() => router.push("./(settings)/images")}
+          title={<Text variant="titleMedium" style={styles.menu}>Mes images</Text>}
+          left={props => <List.Icon {...props} icon="camera" />}
+        />
+        <Divider />
+        <List.Item
           onPress={() => router.push("./(settings)/about")}
           title={<Text variant="titleMedium" style={styles.menu}>Informations étude</Text>}
           left={props => <List.Icon {...props} icon="rocket-outline" />}

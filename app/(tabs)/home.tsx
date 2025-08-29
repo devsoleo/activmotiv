@@ -14,25 +14,25 @@ export default function HomeScreen() {
 
   useEffect(() => {
     fetch(`${process.env.EXPO_PUBLIC_API_URL}/notifications`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session}`
-          }
-      })
-      .then((response) => response.json())
-      .then((json) => {
-        setNotifications(json)
-        setLoading(false)
-      })
-      .catch((error) => {
-        console.error(error)
-        setLoading(false)
-      })
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session}`
+      }
+    })
+    .then((response) => response.json())
+    .then((json) => {
+      setNotifications(json)
+      setLoading(false)
+    })
+    .catch((error) => {
+      console.error(error)
+      setLoading(false)
+    })
   }, [])
 
   return (
-    <View style={{ flex: 1}}>
+    <View style={{ flex: 1 }}>
       <Text variant="headlineLarge" style={styles.title}>Accueil</Text>
       <ScrollView>
         {notifications.map((item) => (
