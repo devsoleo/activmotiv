@@ -3,9 +3,10 @@ import { Text } from 'react-native-paper'
 import { BarChart, PieChart } from "react-native-gifted-charts"
 import { useSession } from '@/contexts/auth'
 import { useEffect, useState } from 'react'
+import { api } from '@/api/client'
 
 export default function TrackingScreen() {
-  const { session } = useSession()
+  const { accessToken } = useSession()
   const [barData, setBarData] = useState()
 
   const [openingAmount, setOpeningAmount] = useState()
@@ -16,62 +17,39 @@ export default function TrackingScreen() {
   ];
 
   const getMeasurement = async () => {
-    try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/tracking/opening`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session}`
-        }
-      })
-
-      const data = (await response.json())
-
+    api.get('/tracking/opening')
+    .then((response) => response.data)
+    .then((data) => {
       setBarData(data.map((item, index) => ({ ...item, frontColor: index % 2 === 0 ? 'lightgray' : 'rgb(0, 99, 153)' }) ))
-    } catch (error) {
+    })
+    .catch((error) => {
       console.error(error)
-    }
+    })
   }
 
   const getOpeningAmount = async () => {
-    try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/tracking/opening/amount`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session}`
-        }
-      })
-
-      const data = (await response.json()).data
-
+    api.get('/tracking/opening/amount')
+    .then((response) => response.data)
+    .then((data) => {
+      console.log(data)
       setOpeningAmount(data.amount)
-    } catch (error) {
+    })
+    .catch((error) => {
       console.error(error)
-    }
+    })
   }
 
   const sendMeasurement = async () => {
-    try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/tracking/opening`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session}`
-        },
-        body: JSON.stringify({ measurements: [Date.now()] })
-      })
-
-      if (response.ok) {
-        // console.log("Mesure envoyée !")
-      }
-    } catch (error) {
+    api.put('/tracking/opening', { measurements: [Date.now()] })
+    .then(() => {
+      console.log("Mesure envoyée !")
+    })
+    .catch((error) => {
       console.error(error)
-    }
+    })
   }
 
   useEffect(() => {
-    console.log("ok")
     getOpeningAmount()
     getMeasurement()
     sendMeasurement()
@@ -92,7 +70,7 @@ export default function TrackingScreen() {
         </View>
       </View>
 
-      <View style={{ marginHorizontal: 12 }}>
+      <View style={{ marginHorizontal: 12, zIndex: -1 }}>
         <BarChart
           barWidth={25}
           barBorderRadius={4}

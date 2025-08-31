@@ -1,33 +1,22 @@
 import { useRouter } from 'expo-router'
 import { useState, useEffect } from 'react'
 import { View, ScrollView, StyleSheet } from 'react-native'
-import { Text, Banner, Card, Button } from 'react-native-paper'
-import { useSession } from '@/contexts/auth'
+import { Text, Card, Button } from 'react-native-paper'
+import { api } from '@/api/client'
 
 export default function HomeScreen() {
-  const { session } = useSession()
-  const [visible, setVisible] = useState(true)
   const router = useRouter()
 
   const [notifications, setNotifications] = useState([])
-  const [loading, setLoading] = useState(true); // pour gérer le chargement
 
   useEffect(() => {
-    fetch(`${process.env.EXPO_PUBLIC_API_URL}/notifications`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session}`
-      }
-    })
-    .then((response) => response.json())
-    .then((json) => {
-      setNotifications(json)
-      setLoading(false)
+    api.get('/notifications')
+    .then((response) => response.data)
+    .then((data) => {
+      setNotifications(data)
     })
     .catch((error) => {
       console.error(error)
-      setLoading(false)
     })
   }, [])
 

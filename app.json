@@ -46,7 +46,8 @@
             "buildToolsVersion": "34.0.0"
           }
         }
-      ]
+      ],
+      "react-native-edge-to-edge"
     ],
     "experiments": {
       "typedRoutes": true

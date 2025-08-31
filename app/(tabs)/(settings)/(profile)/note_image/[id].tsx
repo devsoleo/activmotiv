@@ -4,10 +4,11 @@ import { Text, StyleSheet, View, Image, Dimensions, FlatList, TouchableOpacity }
 import { Appbar, IconButton } from 'react-native-paper'
 import { useSession } from '@/contexts/auth'
 import { illustrationsList, arousalList, valenceList } from '@/constants/images'
+import { api } from '@/api/client'
 
 export default function NoteImage() {
   const router = useRouter()
-  const { session } = useSession()
+  const { accessToken } = useSession()
   const { id } = useLocalSearchParams()
 
   const [imageId, setImageId] = useState(Number(id))
@@ -23,24 +24,15 @@ export default function NoteImage() {
 
   useEffect(() => {
     const getAge = async () => {
-      try {
-        const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/images/${imageId}/rating`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session}`
-          }
-        })
-
-        // TODO : Fix avec un .then
-        // app/(tabs)/home.tsx#L14
-        const data = (await response.json()).data
-
+      api.get(`/images/${imageId}/rating`)
+      .then((response) => response.data)
+      .then((data) => {
         setValence(data.valence)
         setArousal(data.arousal)
-      } catch (e) {
-        console.error(e)
-      }
+      })
+      .catch((error) => {
+        console.error(error)
+      })
     }
 
     getAge()
@@ -48,22 +40,13 @@ export default function NoteImage() {
 
   useEffect(() => {
     const sendRating = async () => {
-      try {
-        const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/images/${imageId}/rating`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session}`
-          },
-          body: JSON.stringify({ valence, arousal })
-        })
-
-        if (response.ok) {
+        api.put(`/images/${imageId}/rating`, { valence, arousal })
+        .then(() => {
           console.log("Note envoyée !")
-        }
-      } catch (error) {
+        })
+        .catch((error) => {
         console.error(error)
-      }
+      })
     }
 
     sendRating()

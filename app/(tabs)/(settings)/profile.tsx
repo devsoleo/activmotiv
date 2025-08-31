@@ -8,7 +8,7 @@ import { useSession } from '@/contexts/auth'
 
 export default function Profile() {
   const router = useRouter()
-  const { session } = useSession()
+  const { accessToken } = useSession()
 
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
@@ -16,8 +16,7 @@ export default function Profile() {
   const [isPasswordConfirmSecure, setIsPasswordConfirmSecure] = useState(true)
 
   let uid = ""
-  if (session != null && session != undefined) uid = JSON.parse(Buffer.from(session.split('.')[1], 'base64').toString())["uid"]
-
+  if (accessToken != null && accessToken != undefined) uid = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())["uid"]
 
   return (
     <ScrollView keyboardShouldPersistTaps="always">

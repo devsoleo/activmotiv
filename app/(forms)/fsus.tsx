@@ -8,7 +8,7 @@ const containerStyle = {backgroundColor: 'white', margin: 20, padding: 24, borde
 
 export default function FsusScreen() {
   const [visible, setVisible] = useState(true);
-  const { session } = useSession()
+  const { accessToken } = useSession()
 
   const [noteId, setNoteId] = useState(Number(0))
   const [note, setNote] = useState(1)

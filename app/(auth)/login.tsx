@@ -4,6 +4,7 @@ import { TextInput, Button, Text } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { useSession } from '@/contexts/auth'
 import { Dimensions } from 'react-native'
+import { api } from '@/api/client'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -18,19 +19,15 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ uid, password })
-      })
+      const response = await api.post('/login', { uid, password })
 
-      const data = await response.json()
+      if (response.status == 200) {
+        const data = response.data
 
-      if (response.ok) {
-        signIn(data.token)
+        signIn(data.accessToken, data.refreshToken)
+
         console.log("Connexion réussie !")
+
         router.replace("/(tabs)")
       } else {
         Alert.alert('Erreur', 'Identifiants invalides')

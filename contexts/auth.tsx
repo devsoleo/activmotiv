@@ -5,13 +5,11 @@ import { useStorageState } from './useStorageState'
 const AuthContext = createContext<{
   signIn: (token: string) => void
   signOut: () => void
-  session?: string | null
-  isLoading: boolean
+  accessToken?: string | null
 }>({
   signIn: (token: string) => null,
   signOut: () => null,
-  session: null,
-  isLoading: false,
+  accessToken: null
 })
 
 // This hook can be used to access the user info.
@@ -25,15 +23,21 @@ export function useSession() {
 }
 
 export function SessionProvider({ children }: PropsWithChildren) {
-  const [[isLoading, session], setSession] = useStorageState('session')
+  const [[_, accessToken], setAccessToken] = useStorageState('accessToken')
+  const [[_1, refreshToken], setRefreshToken] = useStorageState('refreshToken')
 
   return (
     <AuthContext
       value={{
-        signIn: (token) => setSession(token),
-        signOut: () => setSession(null),
-        session,
-        isLoading,
+        signIn: (token, refreshToken) => {
+          setAccessToken(token)
+          setRefreshToken(refreshToken)
+        },
+        signOut: () => {
+          setAccessToken(null)
+          setRefreshToken(null)
+        },
+        accessToken
       }}>
       {children}
     </AuthContext>
