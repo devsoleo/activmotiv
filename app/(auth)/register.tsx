@@ -73,7 +73,7 @@ export default function Register() {
         <Text style={styles.signupText}>Déjà inscrit ?</Text>
       </TouchableOpacity>
     </View>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -97,4 +97,4 @@ const styles = StyleSheet.create({
     color: '#1e90ff',
     marginBottom: 64,
   },
-});
+})

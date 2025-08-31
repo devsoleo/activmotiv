@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { ScrollView, StyleSheet } from 'react-native'
 import { Appbar, TextInput, Text, Button } from 'react-native-paper'
 
-import { Buffer } from 'buffer';
+import { Buffer } from 'buffer'
 import { useSession } from '@/contexts/auth'
 
 export default function Profile() {

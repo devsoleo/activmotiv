@@ -68,7 +68,7 @@ export default function About() {
           Chaque semaine, il vous sera demandé de répondre à des questionnaires (pour une durée
           totale estimée de 5 à 10 minutes) portant sur votre expérience utilisateur (e.g., bugs
           éventuels, remarques, avis utilisateurs). Il est important de nous rapporter tout type de
-          bug dès son apparition afin d'améliorer le bon fonctionnement de l'application.[RD1]
+          bug dès son apparition afin d'améliorer le bon fonctionnement de l'application.
         </Text>
         <Text style={styles.paragraph}>
           1. Installation de l'application : Vous recevrez des instructions pour installer

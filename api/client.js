@@ -6,6 +6,8 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+api.defaults.timeout = 2000
+
 // Ajouter accessToken dans chaque requête
 api.interceptors.request.use(async (config) => {
   const accessToken = await SecureStore.getItemAsync('accessToken')
@@ -33,7 +35,7 @@ api.interceptors.response.use(
           refreshToken: currentRefreshToken,
         })
 
-        const { accessToken, refreshToken } = res.data;
+        const { accessToken, refreshToken } = res.data
 
         await SecureStore.setItemAsync('accessToken', accessToken)
         await SecureStore.setItemAsync('refreshToken', refreshToken)

@@ -1,5 +1,4 @@
 import { Redirect, Stack } from 'expo-router'
-
 import { useSession } from '@/contexts/auth'
 
 export default function AppLayout() {

@@ -3,13 +3,15 @@ import { use, createContext, type PropsWithChildren } from 'react'
 import { useStorageState } from './useStorageState'
 
 const AuthContext = createContext<{
-  signIn: (token: string) => void
+  signIn: (accessToken: string, refreshToken: string) => void
   signOut: () => void
   accessToken?: string | null
+  refreshToken?: string | null
 }>({
   signIn: (token: string) => null,
   signOut: () => null,
-  accessToken: null
+  accessToken: null,
+  refreshToken: null
 })
 
 // This hook can be used to access the user info.
@@ -29,15 +31,16 @@ export function SessionProvider({ children }: PropsWithChildren) {
   return (
     <AuthContext
       value={{
-        signIn: (token, refreshToken) => {
-          setAccessToken(token)
+        signIn: (accessToken, refreshToken) => {
+          setAccessToken(accessToken)
           setRefreshToken(refreshToken)
         },
         signOut: () => {
           setAccessToken(null)
           setRefreshToken(null)
         },
-        accessToken
+        accessToken,
+        refreshToken
       }}>
       {children}
     </AuthContext>

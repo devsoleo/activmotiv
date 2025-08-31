@@ -1,19 +1,18 @@
-import * as React from 'react'
-import { View, StyleSheet, Alert, TouchableOpacity, Image } from 'react-native'
+import { useState } from 'react'
+import { View, StyleSheet, Alert, TouchableOpacity, Image, Dimensions } from 'react-native'
 import { TextInput, Button, Text } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { useSession } from '@/contexts/auth'
-import { Dimensions } from 'react-native'
 import { api } from '@/api/client'
 
 export default function LoginPage() {
   const router = useRouter()
   const { signIn } = useSession()
 
-  const [uid, setUid] = React.useState('81fbdec3')
-  const [password, setPassword] = React.useState('15022004')
-  const [isPasswordSecure, setIsPasswordSecure] = React.useState(true);
-  const [loading, setLoading] = React.useState(false)
+  const [uid, setUid] = useState('81fbdec3')
+  const [password, setPassword] = useState('15022004')
+  const [isPasswordSecure, setIsPasswordSecure] = useState(true)
+  const [loading, setLoading] = useState(false)
 
   const handleLogin = async () => {
     setLoading(true)

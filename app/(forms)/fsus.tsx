@@ -1,18 +1,42 @@
-import { useState } from 'react';
+import { useState, useRef, createRef } from 'react'
 import { View, StyleSheet, ScrollView } from 'react-native'
-import { Text, Portal, Modal, Button,  Card, IconButton, RadioButton } from 'react-native-paper'
+import { Text, Portal, Modal, Button,  Card, RadioButton } from 'react-native-paper'
 import { questionsList } from '@/constants/fsus'
-import { useSession } from '@/contexts/auth'
+import { api } from '@/api/client'
+import { useRouter } from 'expo-router'
 
-const containerStyle = {backgroundColor: 'white', margin: 20, padding: 24, borderRadius: 18};
+const containerStyle = {backgroundColor: 'white', margin: 20, padding: 24, borderRadius: 18}
 
 export default function FsusScreen() {
-  const [visible, setVisible] = useState(true);
-  const { accessToken } = useSession()
+  const router = useRouter()
+  const [visible, setVisible] = useState(true)
 
-  const [noteId, setNoteId] = useState(Number(0))
-  const [note, setNote] = useState(1)
-  const hideModal = () => setVisible(false);
+  const hideModal = () => setVisible(false)
+
+  const [hasSubmit, setHasSubmit] = useState(false)
+
+  // Notes
+  const [notes, setNotes] = useState(Array(questionsList.length).fill(null))
+
+  const handleNoteChange = (index, value) => {
+    const updatedNotes = [...notes]
+    updatedNotes[index] = value
+    setNotes(updatedNotes)
+  }
+
+  // Scroll
+  const scrollViewRef = useRef(null)
+  const sectionRefs = useRef(questionsList.map(() => createRef()))
+
+  const scrollToSection = (index) => {
+    const ref = sectionRefs.current[index]
+    ref.current?.measureLayout(
+      scrollViewRef.current,
+      (x, y) => {
+        scrollViewRef.current.scrollTo({ y: y, animated: true })
+      }
+    )
+  }
 
   return (
     <View style={{ flex: 1}}>
@@ -27,14 +51,14 @@ export default function FsusScreen() {
         </Modal>
       </Portal>
 
-      <ScrollView>
-        {questionsList.map((item) => (
-          <Card style={{ margin: 12 }} key={item.id}>
+      <ScrollView ref={scrollViewRef}>
+        {questionsList.map((item, index) => (
+          <Card style={{ margin: 12 }} key={item.id} ref={sectionRefs.current[index]}>
             <Card.Content style={{ alignItems: 'center' }}>
               <Text variant="titleMedium" >Question : {item.id}/{questionsList.length}</Text>
               <Text variant="titleMedium" style={{ textAlign: 'center' }}>{item.text}</Text>
 
-              <RadioButton.Group onValueChange={value => setNote(Number(value))} value={String(note)}>
+              <RadioButton.Group onValueChange={value => handleNoteChange(index, Number(value))} value={String(notes[index])}>
                 <View style={styles.radioGroup}>
                   <View style={[styles.radioItem, {marginTop: -32}]}>
                     <Text style={styles.radioLabel}>Pas du tout d'accord</Text>
@@ -58,10 +82,28 @@ export default function FsusScreen() {
                   </View>
                 </View>
               </RadioButton.Group>
+              <Text style={{ color: 'red', paddingTop: 6 }} variant='titleMedium'>{ (notes[index] == null && hasSubmit) && "Réponse manquante !"}</Text>
             </Card.Content>
           </Card>
         ))}
       </ScrollView>
+
+      <View style={{ marginVertical: 12, alignSelf: 'center' }}>
+        <Button mode="outlined" onPress={() => {
+          setHasSubmit(true)
+          const missingAnswer = notes.indexOf(null)
+
+          if (missingAnswer != -1) return scrollToSection(missingAnswer)
+
+          api.post('/forms/fsus', {results: notes})
+          .then(() => {
+            router.replace('/(tabs)')
+          })
+          .catch((error) => {
+            console.log(error)
+          })
+        }}>Valider mes réponses</Button>
+      </View>
     </View>
   )
 }

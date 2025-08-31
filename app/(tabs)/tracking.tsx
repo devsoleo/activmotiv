@@ -1,12 +1,10 @@
 import { View, StyleSheet } from 'react-native'
 import { Text } from 'react-native-paper'
 import { BarChart, PieChart } from "react-native-gifted-charts"
-import { useSession } from '@/contexts/auth'
 import { useEffect, useState } from 'react'
 import { api } from '@/api/client'
 
 export default function TrackingScreen() {
-  const { accessToken } = useSession()
   const [barData, setBarData] = useState()
 
   const [openingAmount, setOpeningAmount] = useState()
@@ -14,7 +12,7 @@ export default function TrackingScreen() {
   const pieData = [
     {value: 40, color: 'lightgrey'},
     {value: 60, color: 'rgb(0, 99, 153)'},
-  ];
+  ]
 
   const getMeasurement = async () => {
     api.get('/tracking/opening')
@@ -31,7 +29,6 @@ export default function TrackingScreen() {
     api.get('/tracking/opening/amount')
     .then((response) => response.data)
     .then((data) => {
-      console.log(data)
       setOpeningAmount(data.amount)
     })
     .catch((error) => {
@@ -90,7 +87,7 @@ export default function TrackingScreen() {
           innerRadius={80}
           data={pieData}
           centerLabelComponent={() => {
-            return <Text style={{fontSize: 30}}>60%</Text>;
+            return <Text style={{fontSize: 30}}>60%</Text>
           }}
         />
       </View>
