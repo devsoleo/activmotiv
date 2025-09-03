@@ -1,5 +1,6 @@
 import * as SecureStore from 'expo-secure-store'
 import  { useEffect, useCallback, useReducer } from 'react'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 type UseStateHook<T> = [[boolean, T | null], (value: T | null) => void]
 
@@ -15,8 +16,10 @@ function useAsyncState<T>(
 export async function setStorageItemAsync(key: string, value: string | null) {
   if (value == null) {
     await SecureStore.deleteItemAsync(key)
+    await AsyncStorage.removeItem(key)
   } else {
     await SecureStore.setItemAsync(key, value)
+    await AsyncStorage.setItem(key, value) // Kotlin
   }
 }
 

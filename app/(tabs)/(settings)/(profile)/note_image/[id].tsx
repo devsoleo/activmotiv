@@ -2,18 +2,16 @@ import { useEffect, useState } from 'react'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { Text, StyleSheet, View, Image, Dimensions, FlatList, TouchableOpacity } from 'react-native'
 import { Appbar, IconButton } from 'react-native-paper'
-import { useSession } from '@/contexts/auth'
 import { illustrationsList, arousalList, valenceList } from '@/constants/images'
 import { api } from '@/api/client'
 
 export default function NoteImage() {
   const router = useRouter()
-  const { accessToken } = useSession()
   const { id } = useLocalSearchParams()
 
   const [imageId, setImageId] = useState(Number(id))
-  const [valence, setValence] = useState(1)
-  const [arousal, setArousal] = useState(1)
+  const [valence, setValence] = useState(null)
+  const [arousal, setArousal] = useState(null)
 
   const screenWidth = Dimensions.get('window').width
   const [numColumns, setNumColumns] = useState(5)
@@ -22,8 +20,21 @@ export default function NoteImage() {
 
   const imageSize = (screenWidth - (padding * 2 + margin * 2 * numColumns)) / numColumns
 
+  const sendRating = async () => {
+    api.put(`/images/${imageId}/rating`, { valence, arousal })
+    .then(() => {
+      console.log("Note envoyée !")
+    })
+    .catch((error) => {
+      console.error(error)
+    })
+  }
+
   useEffect(() => {
     const getAge = async () => {
+      setValence(null)
+      setArousal(null)
+
       api.get(`/images/${imageId}/rating`)
       .then((response) => response.data)
       .then((data) => {
@@ -39,27 +50,19 @@ export default function NoteImage() {
   }, [imageId])
 
   useEffect(() => {
-    const sendRating = async () => {
-        api.put(`/images/${imageId}/rating`, { valence, arousal })
-        .then(() => {
-          console.log("Note envoyée !")
-        })
-        .catch((error) => {
-        console.error(error)
-      })
-    }
+    if (!arousal && !valence) return
 
     sendRating()
   }, [valence, arousal])
 
   const renderOption = ({ item }, selectedId, setSelectedId) => (
     <TouchableOpacity
-      onPress={() => setSelectedId(item.id)}
-      style={{ marginTop: 60 }}
-    >
-
-    {item.id == 1 ? <Text style={{ }}>Pas beaucoup</Text> : <Text></Text>}
-    {item.id == 5 ? <Text style={{ position: "relative", left: -8, top: -19 }}>Beaucoup</Text> : <Text></Text>}
+      onPress={() => {
+        setSelectedId(Number(item.id))
+      }}
+      style={{ marginTop: 60 }}>
+      {item.id == 1 ? <Text style={{ }}>Pas beaucoup</Text> : <Text></Text>}
+      {item.id == 5 ? <Text style={{ position: "relative", left: -8, top: -19 }}>Beaucoup</Text> : <Text></Text>}
 
       <Image
         source={item.source}
@@ -95,7 +98,7 @@ export default function NoteImage() {
       </View>
       <View>
         <FlatList
-          data={arousalList}
+          data={valenceList}
           renderItem={(item) => renderOption(item, valence, setValence)}
           keyExtractor={(item) => item.id}
           numColumns={numColumns}
@@ -103,7 +106,7 @@ export default function NoteImage() {
           contentContainerStyle={{ padding: padding }}
         />
         <FlatList
-          data={valenceList}
+          data={arousalList}
           renderItem={(item) => renderOption(item, arousal, setArousal)}
           keyExtractor={(item) => item.id}
           numColumns={numColumns}

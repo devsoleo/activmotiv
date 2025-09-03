@@ -1,56 +1,105 @@
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
-import { ScrollView, StyleSheet } from 'react-native'
-import { Appbar, TextInput, Text, Button } from 'react-native-paper'
-
+import { Alert, ScrollView, StyleSheet, View  } from 'react-native'
+import { Appbar, TextInput, Text, Button, Snackbar } from 'react-native-paper'
+import Clipboard from '@react-native-clipboard/clipboard'
 import { Buffer } from 'buffer'
 import { useSession } from '@/contexts/auth'
+import { api } from '@/api/client'
 
 export default function Profile() {
   const router = useRouter()
   const { accessToken } = useSession()
 
-  const [password, setPassword] = useState('')
-  const [passwordConfirm, setPasswordConfirm] = useState('')
-  const [isPasswordSecure, setIsPasswordSecure] = useState(true)
-  const [isPasswordConfirmSecure, setIsPasswordConfirmSecure] = useState(true)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+
+  const [isCurrentPasswordSecure, setIsCurrentPasswordSecure] = useState(true)
+  const [isNewPasswordSecure, setIsNewPasswordSecure] = useState(true)
+  const [isConfirmPasswordSecure, setIsConfirmPasswordSecure] = useState(true)
+
+  const [visible, setVisible] = useState(false)
+  const [snackbarText, setSnackbarText] = useState('')
+
+  const toggleSnackbar = () => setVisible(!visible)
+  const dismissSnackbar = () => setVisible(false)
 
   let uid = ""
   if (accessToken != null && accessToken != undefined) uid = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())["uid"]
 
   return (
+    <>
     <ScrollView keyboardShouldPersistTaps="always">
       <Appbar.Header>
         <Appbar.BackAction onPress={() => {router.back()}} />
         <Appbar.Content title="Mon profil" />
       </Appbar.Header>
         <Text variant="titleMedium" style={[styles.title, { marginTop: 16 }]}>Identifiant</Text>
-        <TextInput
-          value={uid}
-          disabled
-          style={{ margin: 16 }}
-        />
+        <View
+          onTouchEnd={() => {
+            Clipboard.setString(uid)
+            setSnackbarText("UID copié dans le presse papier !")
+            setVisible(true)
+        }}>
+          <TextInput
+            value={uid}
+            disabled
+            style={{ margin: 16 }}
+          />
+        </View>
         <Text variant="titleMedium" style={styles.title}>Modifier mon mot de passe</Text>
         <TextInput
+          label="Mot de passe actuel"
+          value={currentPassword}
+          onChangeText={setCurrentPassword}
+          secureTextEntry={isCurrentPasswordSecure}
+          right={<TextInput.Icon onPress={() => { isCurrentPasswordSecure ? setIsCurrentPasswordSecure(false) : setIsCurrentPasswordSecure(true) }} icon={isCurrentPasswordSecure ? "eye" : "eye-off" } />}
+          style={{ margin: 16 }}
+        />
+        <TextInput
           label="Nouveau mot de passe"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry={isPasswordSecure}
-          right={<TextInput.Icon onPress={() => { isPasswordSecure ? setIsPasswordSecure(false) : setIsPasswordSecure(true) }} icon={isPasswordSecure ? "eye" : "eye-off" } />}
+          value={newPassword}
+          onChangeText={setNewPassword}
+          secureTextEntry={isNewPasswordSecure}
+          right={<TextInput.Icon onPress={() => { isNewPasswordSecure ? setIsNewPasswordSecure(false) : setIsNewPasswordSecure(true) }} icon={isNewPasswordSecure ? "eye" : "eye-off" } />}
           style={{ margin: 16 }}
         />
         <TextInput
           label="Confirmer le mot de passe"
-          value={passwordConfirm}
-          onChangeText={setPasswordConfirm}
-          secureTextEntry={isPasswordConfirmSecure}
-          right={<TextInput.Icon onPress={() => { isPasswordConfirmSecure ? setIsPasswordConfirmSecure(false) : setIsPasswordConfirmSecure(true) }} icon={isPasswordConfirmSecure ? "eye" : "eye-off" } />}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry={isConfirmPasswordSecure}
+          right={<TextInput.Icon onPress={() => { isConfirmPasswordSecure ? setIsConfirmPasswordSecure(false) : setIsConfirmPasswordSecure(true) }} icon={isConfirmPasswordSecure ? "eye" : "eye-off" } />}
           style={{ margin: 16 }}
         />
-        <Button mode="outlined" disabled={passwordConfirm.length == 0 || password.length == 0} style={{ margin: 16 }}>
+        <Button mode="outlined" disabled={(newPassword.length == 0) || newPassword != confirmPassword} style={{ margin: 16 }} onPress={async () => {
+          try {
+            const response = await api.post('/auth/reset-password', { current_password: currentPassword, new_password: newPassword })
+
+            if (response.status == 200) {
+              setSnackbarText("Votre mot de passe a bien été modifié !")
+              setVisible(true)
+            } else {
+              setSnackbarText("Une erreur est survenue !")
+              setVisible(true)
+            }
+          } catch (error) {
+            setSnackbarText("Une erreur est survenue !")
+            setVisible(true)
+            console.error(error)
+          }
+        }}>
           Modifier mon mot de passe
         </Button>
     </ScrollView>
+    <Snackbar
+      visible={visible}
+      duration={5000}
+      onDismiss={dismissSnackbar}>
+      {snackbarText}
+    </Snackbar>
+    </>
   )
 }
 

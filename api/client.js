@@ -44,6 +44,7 @@ api.interceptors.response.use(
 
         return api(originalRequest)
       } catch (err) {
+        // TODO : Disconnect user
         return Promise.reject(err)
       }
     }
