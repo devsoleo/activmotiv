@@ -19,6 +19,12 @@ export default function Contacts() {
         left={props => <List.Icon {...props} icon="account" />}
       />
       <List.Item
+        title="Gérard Dray - gerard.dray@mines-ales.fr"
+        description="Co-directreur de thèse"
+        onPress={() => Linking.openURL('mailto:gerard.dray@mines-ales.fr')}
+        left={props => <List.Icon {...props} icon="account" />}
+      />
+      <List.Item
         title="Rémy Dadier - remy.dadier@umontpellier.fr"
         description="Doctorant - Chef de projet"
         onPress={() => Linking.openURL('mailto:remy.dadier@umontpellier.fr')}

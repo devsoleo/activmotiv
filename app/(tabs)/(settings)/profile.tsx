@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
-import { Alert, ScrollView, StyleSheet, View  } from 'react-native'
+import { ScrollView, StyleSheet, View  } from 'react-native'
 import { Appbar, TextInput, Text, Button, Snackbar } from 'react-native-paper'
 import Clipboard from '@react-native-clipboard/clipboard'
 import { Buffer } from 'buffer'
 import { useSession } from '@/contexts/auth'
-import { api } from '@/api/client'
+import { api } from '@/services/api'
+import { getNetworkStateAsync } from 'expo-network'
 
 export default function Profile() {
   const router = useRouter()
@@ -74,6 +75,13 @@ export default function Profile() {
           style={{ margin: 16 }}
         />
         <Button mode="outlined" disabled={(newPassword.length == 0) || newPassword != confirmPassword} style={{ margin: 16 }} onPress={async () => {
+          const networkState = await getNetworkStateAsync()
+          if (!networkState.isConnected) {
+            setSnackbarText("Action impossible hors-ligne !")
+            setVisible(true)
+            return
+          }
+
           try {
             const response = await api.post('/auth/reset-password', { current_password: currentPassword, new_password: newPassword })
 

@@ -3,14 +3,14 @@ import { View, StyleSheet, Alert, TouchableOpacity, Image, Dimensions } from 're
 import { TextInput, Button, Text } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { useSession } from '@/contexts/auth'
-import { api } from '@/api/client'
+import { api } from '@/services/api'
 
 export default function LoginPage() {
   const router = useRouter()
   const { signIn } = useSession()
 
-  const [uid, setUid] = useState('81fbdec3')
-  const [password, setPassword] = useState('15022004')
+  const [uid, setUid] = useState('')
+  const [password, setPassword] = useState('')
   const [isPasswordSecure, setIsPasswordSecure] = useState(true)
   const [loading, setLoading] = useState(false)
 
@@ -18,12 +18,12 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const response = await api.post('/login', { uid, password })
+      const response = await api.post('/auth/login', { uid, password })
 
       if (response.status == 200) {
         const data = response.data
 
-        signIn(data.accessToken, data.refreshToken)
+        signIn(data.accessToken)
 
         console.log("Connexion réussie !")
 

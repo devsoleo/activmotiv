@@ -2,7 +2,7 @@ import { View, StyleSheet } from 'react-native'
 import { Text } from 'react-native-paper'
 import { BarChart, PieChart } from "react-native-gifted-charts"
 import { useEffect, useState } from 'react'
-import { api } from '@/api/client'
+import { api } from '@/services/api'
 
 export default function TrackingScreen() {
   const [barData, setBarData] = useState()

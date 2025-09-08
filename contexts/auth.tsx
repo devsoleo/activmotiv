@@ -1,22 +1,24 @@
-import { use, createContext, type PropsWithChildren } from 'react'
+import { createContext, type PropsWithChildren, useContext, useEffect, useMemo } from 'react'
 
 import { useStorageState } from './useStorageState'
+import { useRouter } from 'expo-router'
 
-const AuthContext = createContext<{
-  signIn: (accessToken: string, refreshToken: string) => void
+import { setSignOut } from './authManager'
+
+type AuthContextType = {
+  signIn: (accessToken: string) => void
   signOut: () => void
-  accessToken?: string | null
-  refreshToken?: string | null
-}>({
-  signIn: (token: string) => null,
+  accessToken: string | null
+}
+
+const AuthContext = createContext<AuthContextType>({
+  signIn: (accessToken: string) => null,
   signOut: () => null,
-  accessToken: null,
-  refreshToken: null
+  accessToken: null
 })
 
-// This hook can be used to access the user info.
 export function useSession() {
-  const value = use(AuthContext)
+  const value = useContext(AuthContext)
   if (!value) {
     throw new Error('useSession must be wrapped in a <SessionProvider />')
   }
@@ -24,25 +26,32 @@ export function useSession() {
   return value
 }
 
-export function SessionProvider({ children }: PropsWithChildren) {
+export function AuthProvider({ children }: PropsWithChildren) {
   const [[_, accessToken], setAccessToken] = useStorageState('accessToken')
-  const [[_1, refreshToken], setRefreshToken] = useStorageState('refreshToken')
+
+  const router = useRouter()
+
+  const memo = useMemo(
+    () => ({
+      signIn: (accessToken: string) => {
+        setAccessToken(accessToken)
+      },
+      signOut: () => {
+        setAccessToken(null)
+        router.replace('/(auth)/login')
+      },
+      accessToken,
+    }),
+    [accessToken]
+  )
+
+  useEffect(() => {
+    setSignOut(memo.signOut)
+  }, [memo.signOut])
 
   return (
-    <AuthContext
-      value={{
-        signIn: (accessToken, refreshToken) => {
-          setAccessToken(accessToken)
-          setRefreshToken(refreshToken)
-        },
-        signOut: () => {
-          setAccessToken(null)
-          setRefreshToken(null)
-        },
-        accessToken,
-        refreshToken
-      }}>
+    <AuthContext.Provider value={memo}>
       {children}
-    </AuthContext>
+    </AuthContext.Provider>
   )
 }

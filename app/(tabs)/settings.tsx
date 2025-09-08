@@ -43,7 +43,7 @@ export default function SettingsScreen() {
         />
         <Divider />
         <List.Item
-          onPress={() => Linking.openURL("https://google.com")}
+          onPress={() => Linking.openURL("https://sondage.umontpellier.fr/ls/index.php/325198?newtest=Y&lang=fr&uid=81fbdec3")}
           title={<Text variant="titleMedium" style={styles.menu}>Signaler un bug</Text>}
           left={props => <List.Icon {...props} icon="bug" />}
         />

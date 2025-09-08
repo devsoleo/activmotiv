@@ -1,7 +1,7 @@
 import { Slot } from 'expo-router'
 import { PaperProvider } from 'react-native-paper'
 
-import { SessionProvider } from '@/contexts/auth'
+import { AuthProvider } from '@/contexts/auth'
 
 const theme = {
   "colors": {
@@ -51,9 +51,9 @@ const theme = {
 export default function RootLayout() {
   return (
     <PaperProvider theme={theme}>
-      <SessionProvider>
+      <AuthProvider>
         <Slot />
-      </SessionProvider>
+      </AuthProvider>
     </PaperProvider>
   )
 }

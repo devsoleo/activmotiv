@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router'
 import { useState, useEffect } from 'react'
 import { View, ScrollView, StyleSheet } from 'react-native'
 import { Text, Card, Button } from 'react-native-paper'
-import { api } from '@/api/client'
+import { api } from '@/services/api'
 
 export default function HomeScreen() {
   const router = useRouter()

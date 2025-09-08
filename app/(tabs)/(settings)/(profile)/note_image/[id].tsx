@@ -3,7 +3,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router'
 import { Text, StyleSheet, View, Image, Dimensions, FlatList, TouchableOpacity } from 'react-native'
 import { Appbar, IconButton } from 'react-native-paper'
 import { illustrationsList, arousalList, valenceList } from '@/constants/images'
-import { api } from '@/api/client'
+import { api } from '@/services/api'
 
 export default function NoteImage() {
   const router = useRouter()
