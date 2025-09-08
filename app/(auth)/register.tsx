@@ -1,7 +1,8 @@
 import * as React from 'react'
-import { View, StyleSheet, TouchableOpacity, Dimensions, Image } from 'react-native'
+import { View, StyleSheet, TouchableOpacity, Dimensions, Image, Alert } from 'react-native'
 import { TextInput, Text, Button } from 'react-native-paper'
 import { useRouter } from 'expo-router'
+import { api } from '@/api/client'
 
 export default function Register() {
   const router = useRouter()
@@ -15,6 +16,25 @@ export default function Register() {
 
   const handleSignupRedirect = () => router.replace('/(auth)/login')
   const screenWidth = Dimensions.get('window').width
+
+  const handleRegister = async () => {
+    setLoading(true)
+
+    try {
+      const response = await api.post('/auth/first-login', { uid, password })
+
+      if (response.status == 200) {
+        router.replace("/(auth)/login")
+      } else {
+        Alert.alert('Erreur', 'Identifiants invalides')
+      }
+    } catch (error) {
+      Alert.alert('Erreur', 'Une erreur est survenue')
+      console.error(error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <View style={styles.wrapper}>
@@ -60,7 +80,7 @@ export default function Register() {
         />
         <Button
           mode="contained"
-          onPress={() => {}}
+          onPress={handleRegister}
           loading={loading}
           disabled={loading}
           style={styles.button}

@@ -18,7 +18,7 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const response = await api.post('/login', { uid, password })
+      const response = await api.post('/auth/login', { uid, password })
 
       if (response.status == 200) {
         const data = response.data

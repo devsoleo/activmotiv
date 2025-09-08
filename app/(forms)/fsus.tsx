@@ -95,7 +95,7 @@ export default function FsusScreen() {
 
           if (missingAnswer != -1) return scrollToSection(missingAnswer)
 
-          api.post('/forms/fsus', {results: notes})
+          api.post('/forms/fsus', { results: notes })
           .then(() => {
             router.replace('/(tabs)')
           })
