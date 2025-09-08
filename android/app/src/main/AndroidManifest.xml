@@ -39,6 +39,7 @@
     <activity
         android:name=".popup.ImagesActivity"
         android:exported="true"
+        android:taskAffinity=""
         android:screenOrientation="portrait"/>
     <receiver android:name=".BootReceiver" android:exported="true">
         <intent-filter>

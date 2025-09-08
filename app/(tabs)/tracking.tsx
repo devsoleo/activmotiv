@@ -36,20 +36,9 @@ export default function TrackingScreen() {
     })
   }
 
-  const sendMeasurement = async () => {
-    api.put('/tracking/opening', { measurements: [Date.now()] })
-    .then(() => {
-      console.log("Mesure envoyée !")
-    })
-    .catch((error) => {
-      console.error(error)
-    })
-  }
-
   useEffect(() => {
     getOpeningAmount()
     getMeasurement()
-    sendMeasurement()
   }, [])
 
   return (
