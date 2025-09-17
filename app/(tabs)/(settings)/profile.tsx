@@ -5,7 +5,7 @@ import { Appbar, TextInput, Text, Button, Snackbar } from 'react-native-paper'
 import Clipboard from '@react-native-clipboard/clipboard'
 import { Buffer } from 'buffer'
 import { useSession } from '@/contexts/auth'
-import { api } from '@/api/client'
+import { api } from '@/services/api'
 
 export default function Profile() {
   const router = useRouter()

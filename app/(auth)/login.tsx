@@ -3,7 +3,7 @@ import { View, StyleSheet, Alert, TouchableOpacity, Image, Dimensions } from 're
 import { TextInput, Button, Text } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { useSession } from '@/contexts/auth'
-import { api } from '@/api/client'
+import { api } from '@/services/api'
 
 export default function LoginPage() {
   const router = useRouter()

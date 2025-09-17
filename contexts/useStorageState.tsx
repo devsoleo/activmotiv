@@ -1,6 +1,5 @@
-import * as SecureStore from 'expo-secure-store'
 import  { useEffect, useCallback, useReducer } from 'react'
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import { getStorageItem, setStorageItem } from '../services/storage'
 
 type UseStateHook<T> = [[boolean, T | null], (value: T | null) => void]
 
@@ -13,23 +12,13 @@ function useAsyncState<T>(
   ) as UseStateHook<T>
 }
 
-export async function setStorageItemAsync(key: string, value: string | null) {
-  if (value == null) {
-    await SecureStore.deleteItemAsync(key)
-    await AsyncStorage.removeItem(key)
-  } else {
-    await SecureStore.setItemAsync(key, value)
-    await AsyncStorage.setItem(key, value) // Kotlin
-  }
-}
-
 export function useStorageState(key: string): UseStateHook<string> {
   // Public
   const [state, setState] = useAsyncState<string>()
 
   // Get
   useEffect(() => {
-    SecureStore.getItemAsync(key).then(value => {
+    getStorageItem(key).then(value => {
       setState(value)
     })
   }, [key])
@@ -38,7 +27,7 @@ export function useStorageState(key: string): UseStateHook<string> {
   const setValue = useCallback(
     (value: string | null) => {
       setState(value)
-      setStorageItemAsync(key, value)
+      setStorageItem(key, value)
     },
     [key]
   )

@@ -2,7 +2,7 @@ import * as React from 'react'
 import { View, StyleSheet, TouchableOpacity, Dimensions, Image, Alert } from 'react-native'
 import { TextInput, Text, Button } from 'react-native-paper'
 import { useRouter } from 'expo-router'
-import { api } from '@/api/client'
+import { api } from '@/services/api'
 
 export default function Register() {
   const router = useRouter()

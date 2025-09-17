@@ -2,7 +2,7 @@ import { useState, useRef, createRef } from 'react'
 import { View, StyleSheet, ScrollView } from 'react-native'
 import { Text, Portal, Modal, Button,  Card, RadioButton } from 'react-native-paper'
 import { questionsList } from '@/constants/fsus'
-import { api } from '@/api/client'
+import { api } from '@/services/api'
 import { useRouter } from 'expo-router'
 
 const containerStyle = {backgroundColor: 'white', margin: 20, padding: 24, borderRadius: 18}
