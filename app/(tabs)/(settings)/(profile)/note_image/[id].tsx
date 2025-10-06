@@ -4,6 +4,8 @@ import { Text, StyleSheet, View, Image, Dimensions, FlatList, TouchableOpacity }
 import { Appbar, IconButton } from 'react-native-paper'
 import { illustrationsList, arousalList, valenceList } from '@/constants/images'
 import { api } from '@/services/api'
+import { getNetworkStateAsync } from 'expo-network'
+import * as SAMCache from '@/services/cache/sam'
 
 export default function NoteImage() {
   const router = useRouter()
@@ -12,6 +14,7 @@ export default function NoteImage() {
   const [imageId, setImageId] = useState(Number(id))
   const [valence, setValence] = useState(null)
   const [arousal, setArousal] = useState(null)
+  const [hidden, setHidden] = useState(false)
 
   const screenWidth = Dimensions.get('window').width
   const [numColumns, setNumColumns] = useState(5)
@@ -21,39 +24,67 @@ export default function NoteImage() {
   const imageSize = (screenWidth - (padding * 2 + margin * 2 * numColumns)) / numColumns
 
   const sendRating = async () => {
-    api.put(`/images/${imageId}/rating`, { valence, arousal })
-    .then(() => {
-      console.log("Note envoyée !")
-    })
-    .catch((error) => {
-      console.error(error)
-    })
+    SAMCache.addImage({ image: imageId, valence, arousal, hidden })
+
+    // DO THIS ON APP OPENING
+    // api.put(`/images/${imageId}/rating`, { valence, arousal })
+    // .then(() => {
+    //   console.log("Note envoyée !")
+    // })
+    // .catch((error) => {
+    //   console.error(error)
+    // })
   }
 
   useEffect(() => {
-    const getAge = async () => {
+    const loadImage = async () => {
       setValence(null)
       setArousal(null)
+      setHidden(false)
 
-      api.get(`/images/${imageId}/rating`)
-      .then((response) => response.data)
-      .then((data) => {
-        setValence(data.valence)
-        setArousal(data.arousal)
-      })
-      .catch((error) => {
-        console.error(error)
-      })
+      const image = await SAMCache.getImage(imageId)
+
+      if (image == undefined) {
+        console.log("STEP 1: not in cache")
+        const networkState = await getNetworkStateAsync()
+
+        if (networkState.isConnected) {
+          console.log("STEP 2: ask server")
+
+          api.get(`/sam/image/${imageId}`)
+          .then((response) => response.data)
+          .then((data) => {
+            console.log("STEP 3: found so store in cache")
+
+            SAMCache.addImage(data)
+
+            setValence(data.valence)
+            setArousal(data.arousal)
+            setHidden(data.hidden)
+          })
+          .catch((error) => {
+            // console.error(error)
+          })
+        }
+
+        return
+      }
+
+      console.log("STEP 1: " + imageId + " found in cache")
+
+      setValence(image.valence)
+      setArousal(image.arousal)
+      setHidden(image.hidden)
     }
 
-    getAge()
+    loadImage()
   }, [imageId])
 
   useEffect(() => {
     if (!arousal && !valence) return
 
     sendRating()
-  }, [valence, arousal])
+  }, [valence, arousal, hidden])
 
   const renderOption = ({ item }, selectedId, setSelectedId) => (
     <TouchableOpacity
@@ -115,6 +146,16 @@ export default function NoteImage() {
         />
       </View>
       <View style={{ flex: 1, justifyContent: 'flex-end', marginBottom: 100 }}>
+          <IconButton
+            icon={ hidden ? 'eye-off' : 'eye'}
+            size={40}
+            onPress={() => {}}
+            iconColor={ hidden ? 'gray' : 'rgba(0, 99, 153, 0.7)'}
+            style={{ margin: 'auto' }}
+            onPressOut={() => {
+              setHidden(!hidden)
+            }}
+          />
         <View style={{ flexDirection: "row", justifyContent: 'center', alignItems: 'center'}}>
           <IconButton
             icon="chevron-left"
@@ -137,7 +178,7 @@ export default function NoteImage() {
 }
 
 const styles = StyleSheet.create({
-  image: { 
+  image: {
     borderRadius: 8,
     borderColor: "rgb(0, 99, 153)"
   },

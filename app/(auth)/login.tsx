@@ -5,6 +5,8 @@ import { useRouter } from 'expo-router'
 import { useSession } from '@/contexts/auth'
 import { api } from '@/services/api'
 
+import * as SAMCache from '../../services/cache/sam'
+
 export default function LoginPage() {
   const router = useRouter()
   const { signIn } = useSession()
@@ -24,6 +26,8 @@ export default function LoginPage() {
         const data = response.data
 
         signIn(data.accessToken)
+
+        SAMCache.loadFromServer()
 
         console.log("Connexion réussie !")
 
