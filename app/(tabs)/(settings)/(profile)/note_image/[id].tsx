@@ -27,13 +27,17 @@ export default function NoteImage() {
     SAMCache.addImage({ image: imageId, valence, arousal, hidden })
 
     // DO THIS ON APP OPENING
-    // api.put(`/images/${imageId}/rating`, { valence, arousal })
-    // .then(() => {
-    //   console.log("Note envoyée !")
-    // })
-    // .catch((error) => {
-    //   console.error(error)
-    // })
+    const networkState = await getNetworkStateAsync()
+
+    if (networkState.isConnected) {
+      api.put(`/sam/image/${imageId}`, { valence, arousal, hidden })
+      .then(() => {
+        console.log("Note envoyée !")
+      })
+      .catch((error) => {
+        console.error(error)
+      })
+    }
   }
 
   useEffect(() => {
@@ -81,7 +85,7 @@ export default function NoteImage() {
   }, [imageId])
 
   useEffect(() => {
-    if (!arousal && !valence) return
+    if (!arousal && !valence && !hidden) return
 
     sendRating()
   }, [valence, arousal, hidden])

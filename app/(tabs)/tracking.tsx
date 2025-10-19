@@ -3,6 +3,7 @@ import { Text } from 'react-native-paper'
 import { BarChart, PieChart } from "react-native-gifted-charts"
 import { useEffect, useState } from 'react'
 import { api } from '@/services/api'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function TrackingScreen() {
   const [barData, setBarData] = useState()
@@ -42,7 +43,7 @@ export default function TrackingScreen() {
   }, [])
 
   return (
-    <View style={{ flex: 1}}>
+    <SafeAreaView style={{ flex: 1}}>
       <Text variant="headlineLarge" style={styles.title}>Suivi</Text>
 
       <View style={styles.statsContainer}>
@@ -80,12 +81,12 @@ export default function TrackingScreen() {
           }}
         />
       </View>
-    </View>
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  title: { textAlign: 'center', paddingTop: 45, paddingBottom: 15 },
+  title: { textAlign: 'center', paddingVertical: 12, fontWeight: "bold" },
   statsContainer: {
     flexDirection: 'row', // côte à côte
     justifyContent: 'space-evenly', 

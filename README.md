@@ -1,4 +1,15 @@
 # activmotiv
+## Système de cache
+### Namespace
+namespace = cache_${scope}
+Exemples de scopes : sam, fsus, auth, etc...
+
+### Cache
+Chaque namespace a un cache associé, ce cache est une liste d'éléments :
+cache : { "scope": { "name": [] } }
+cache : { "questionnaire": { "fsus": [], "generic": [] }, "sam": { "images": [] } }
+
+Cette liste
 
 ## Production
 ### Build local

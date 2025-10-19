@@ -41,5 +41,5 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: { textAlign: 'center', paddingTop: 45, paddingBottom: 15 },
+  title: { textAlign: 'center', paddingTop: 45, paddingBottom: 15, fontWeight: "bold" },
 })

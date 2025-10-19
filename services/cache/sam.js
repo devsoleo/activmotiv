@@ -1,7 +1,6 @@
 import { api } from '@/services/api'
 
 import { debugCache, getCache, setCache } from '../cache'
-import { setStorageItem } from '../storage'
 
 export async function loadFromServer() {
   api.get(`/sam/images`)
