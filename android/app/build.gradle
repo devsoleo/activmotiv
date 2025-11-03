@@ -97,8 +97,8 @@ android {
         applicationId 'fr.devsoleo.activmotiv'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 14
-        versionName "1.1.1"
+        versionCode 15 // TAG : Upgrade Version
+        versionName "2.0.0" // TAG : Upgrade Version
     }
     signingConfigs {
         debug {

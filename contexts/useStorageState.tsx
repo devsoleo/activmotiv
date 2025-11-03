@@ -1,5 +1,5 @@
 import  { useEffect, useCallback, useReducer } from 'react'
-import { getStorageItem, setStorageItem } from '../services/storage'
+import { getStorageItem, setStorageItem } from '@/services/storage'
 
 type UseStateHook<T> = [[boolean, T | null], (value: T | null) => void]
 

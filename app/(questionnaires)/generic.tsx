@@ -2,8 +2,7 @@ import { StyleSheet } from 'react-native'
 import { Text } from 'react-native-paper'
 import { attitudeList, intentionList, motivationList } from '@/constants/forms'
 import Questionnaire from '@/components/Questionnaire'
-
-import { saveResults, syncWithServer } from '@/services/cache/questionnaire'
+import { saveResults } from '@/services/cache/questionnaire'
 import { useRouter } from 'expo-router'
 
 const shuffledGroups = [
@@ -19,16 +18,20 @@ export default function GenericScreen() {
 
   return (
     <Questionnaire title="Questionnaire générique" infos={<>
-      <Text>
-        Lisez attentivement chaque phrase et répondez sur l'échelle située en dessous en sélectionnant un nombre correspondant le mieux à ce que vous pensez.
+      <Text style={{ textAlign: 'justify' }}>
+        Dans cette section, vous répondrez à quelques questions sur votre perception, vos émotions et votre motivation concernant l'activité physique.
+        Avant de commencer, voici une <Text style={{ fontWeight: "bold" }}>définition standardisée de l'activité physique</Text>, afin que chacun(e) se base sur la même compréhension :
       </Text>
-      <Text style={{ paddingTop: 12 }}>
-        (1 = pas du tout d'accord à 5 = tout à fait d'accord)
+      <Text style={{ paddingTop: 12, fontStyle: 'italic', textAlign: 'justify' }}>
+        "L'activité physique se réfère à tout mouvement corporel produit par les muscles squelettiques qui requiert une dépense d'énergie.
+        L'activité physique désigne tous les mouvements que l'on effectue notamment dans le cadre des loisirs, pour se déplacer d'un endroit à l'autre, sur le lieu de travail ou lors des tâches ménagères". - OMS, 2024.
       </Text>
+      <Text style={{ paddingTop: 12, textAlign: 'justify' }}>
+        Il vous suffira d'indiquer, sur des échelles de 1 à 7, ce qui correspond le mieux à votre opinion personnelle.
+      </Text>
+      <Text style={{ fontWeight: "bold", paddingTop: 12, textAlign: 'justify' }}>Répondez spontanément et sincèrement : il n'y a pas de bonne ou mauvaise réponse.</Text>
     </>} list={genericList} onSubmit={async (listHeaders, answers) => {
-      await saveResults('generic', listHeaders, answers).then(() => {
-        syncWithServer()
-      })
+      await saveResults('generic', listHeaders, answers)
 
       router.replace('/(tabs)')
     }} />

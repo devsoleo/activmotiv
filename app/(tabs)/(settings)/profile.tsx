@@ -23,7 +23,6 @@ export default function Profile() {
   const [visible, setVisible] = useState(false)
   const [snackbarText, setSnackbarText] = useState('')
 
-  const toggleSnackbar = () => setVisible(!visible)
   const dismissSnackbar = () => setVisible(false)
 
   let uid = ""

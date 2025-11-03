@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router'
 import { useSession } from '@/contexts/auth'
 import { api } from '@/services/api'
 
-import * as SAMCache from '../../services/cache/sam'
+import * as SAMCache from '@/services/cache/sam'
 
 export default function LoginPage() {
   const router = useRouter()

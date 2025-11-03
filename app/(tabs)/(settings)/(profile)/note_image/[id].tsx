@@ -90,14 +90,14 @@ export default function NoteImage() {
     sendRating()
   }, [valence, arousal, hidden])
 
-  const renderOption = ({ item }, selectedId, setSelectedId) => (
+  const renderOption = (variant, { item }, selectedId, setSelectedId) => (
     <TouchableOpacity
       onPress={() => {
         setSelectedId(Number(item.id))
       }}
       style={{ marginTop: 60 }}>
-      {item.id == 1 ? <Text style={{ }}>Pas beaucoup</Text> : <Text></Text>}
-      {item.id == 5 ? <Text style={{ position: "relative", left: -8, top: -19 }}>Beaucoup</Text> : <Text></Text>}
+      {item.id == 1 ? <Text style={{ position: 'absolute', top: -20 }}>{ variant == 'valence' ? 'Très calme \\ très détendu' : 'Très désagréable / négative'}</Text> : <Text></Text>}
+      {item.id == 5 ? <Text style={{ position: 'absolute', left: 6, top: -20}}>{ variant == 'valence' ? 'Surexcité / très stimulé' : 'Très agréable / positive'}</Text> : <Text></Text>}
 
       <Image
         source={item.source}
@@ -107,6 +107,7 @@ export default function NoteImage() {
             width: imageSize,
             height: imageSize,
             margin: margin,
+            marginTop: item.id == 5 || item.id == 1 ? 20 : 0,
             borderWidth: item.id == selectedId ? 2 : 0,
           },
         ]}
@@ -134,7 +135,7 @@ export default function NoteImage() {
       <View>
         <FlatList
           data={valenceList}
-          renderItem={(item) => renderOption(item, valence, setValence)}
+          renderItem={(item) => renderOption('valence', item, valence, setValence)}
           keyExtractor={(item) => item.id}
           numColumns={numColumns}
           scrollEnabled={false}
@@ -142,7 +143,7 @@ export default function NoteImage() {
         />
         <FlatList
           data={arousalList}
-          renderItem={(item) => renderOption(item, arousal, setArousal)}
+          renderItem={(item) => renderOption('arousal', item, arousal, setArousal)}
           keyExtractor={(item) => item.id}
           numColumns={numColumns}
           scrollEnabled={false}

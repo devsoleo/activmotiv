@@ -1,16 +1,14 @@
 import { useState, useRef, createRef } from 'react'
 import { View, StyleSheet, ScrollView } from 'react-native'
-import { Text, Portal, Modal, Button,  Card, RadioButton } from 'react-native-paper'
+import { Text, Button, Card, RadioButton } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import InformationFrame from './InformationFrame'
 
 export default function Questionnaire({ title, list, infos, onSubmit }) {
-  const [visible, setVisible] = useState(true)
-
-  const hideModal = () => setVisible(false)
-
   const [hasSubmit, setHasSubmit] = useState(false)
 
   const listHeaders = list.map(item => item.uid)
+  const size = list.length
 
   const [answers, setAnswers] =  useState(new Array(list.length).fill(null))
 
@@ -36,17 +34,12 @@ export default function Questionnaire({ title, list, infos, onSubmit }) {
   return (
     <SafeAreaView style={{ flex: 1}}>
       <Text variant="headlineLarge" style={styles.title}>{ title }</Text>
-      <Portal>
-        <Modal visible={visible} contentContainerStyle={{ backgroundColor: 'white', margin: 20, padding: 24, borderRadius: 18 }}>
-          <Text variant='titleLarge' style={{ marginBottom: 12 }}>Information importante</Text>
-          {infos}
-          <Button style={{ marginTop: 18 }} onPress={hideModal}>Commencer le questionnaire</Button>
-        </Modal>
-      </Portal>
+
+      <InformationFrame actionName="Commencer le questionnaire" content={infos} />
 
       <ScrollView ref={scrollViewRef}>
         {list.map((item, index) => {
-          return <QuestionCard key={item.uid} question={item} globalIndex={index} hasSubmit={hasSubmit} sectionRefs={sectionRefs} onUpdate={value => { handleAnswerChange(index, value)}} />; // TODO : hasSubmit
+          return <QuestionCard key={item.uid} question={item} globalIndex={index} globalSize={size} hasSubmit={hasSubmit} sectionRefs={sectionRefs} onUpdate={value => { handleAnswerChange(index, value)}} />;
         })}
       </ScrollView>
 
@@ -76,6 +69,8 @@ export default function Questionnaire({ title, list, infos, onSubmit }) {
 
           if (missingAnswer != -1) return scrollToSection(missingAnswer)
 
+          console.log(listHeaders, answers)
+
           onSubmit(listHeaders, answers)
         }}>Valider mes réponses</Button>
       </View>
@@ -83,7 +78,7 @@ export default function Questionnaire({ title, list, infos, onSubmit }) {
   )
 }
 
-const QuestionCard = ({ question, globalIndex, hasSubmit, sectionRefs, onUpdate }) => {
+const QuestionCard = ({ question, globalIndex, globalSize, hasSubmit, sectionRefs, onUpdate }) => {
   const [cardAnswers, setCardAnswers] =  useState(new Array(question.answers.length).fill(null))
 
   const handleCardAnswerChange = (i, v) => {
@@ -96,7 +91,7 @@ const QuestionCard = ({ question, globalIndex, hasSubmit, sectionRefs, onUpdate 
   return (
     <Card style={{ margin: 12 }} ref={sectionRefs.current[globalIndex]}>
       <Card.Content style={{ alignItems: 'center' }}>
-        <Text variant="titleMedium" style={{ fontWeight: "bold" }}>Question : {globalIndex + 1}/10</Text>
+        <Text variant="titleMedium" style={{ fontWeight: "bold" }}>Question : {globalIndex + 1}/{globalSize}</Text>
         <Text variant="titleMedium" style={{ textAlign: 'center', marginBottom: 20 }}>{question.content}</Text>
 
         {question.answers.map((answer, answerIndex) => (

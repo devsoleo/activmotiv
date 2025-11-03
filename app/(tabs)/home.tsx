@@ -1,37 +1,40 @@
-import { useRouter } from 'expo-router'
-import { useState, useEffect } from 'react'
+import { useState, useCallback } from 'react'
+import { api } from '@/services/api'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { View, ScrollView, StyleSheet } from 'react-native'
 import { Text, Card, Button } from 'react-native-paper'
-import { api } from '@/services/api'
+import { tasksList } from '@/constants/tasks'
 
 export default function HomeScreen() {
   const router = useRouter()
 
-  const [notifications, setNotifications] = useState([])
+  const [status, setStatus] = useState({})
 
-  useEffect(() => {
-    api.get('/notifications')
-    .then((response) => response.data)
-    .then((data) => {
-      setNotifications(data)
-    })
-    .catch((error) => {
-      console.error(error)
-    })
-  }, [])
+  useFocusEffect(
+    useCallback(() => {
+      api.get('/tasks/status')
+      .then((response) => response.data)
+      .then((data) => {
+        setStatus(data.status)
+      })
+      .catch((error) => {
+        console.error(error)
+      })
+    }, [])
+  )
 
   return (
     <View style={{ flex: 1 }}>
       <Text variant="headlineLarge" style={styles.title}>Accueil</Text>
       <ScrollView>
-        {notifications.map((item) => (
-          <Card key={item.id} style={{ margin: 10 }}>
+        {tasksList.map((item) => (
+          <Card key={item.id} style={{ margin: 10, opacity: status[item.uid] ? 1 : 0.5 }} mode={(status[item.uid]) ? 'elevated' : 'contained'}>
             <Card.Content>
               <Text variant="titleLarge">{ item.title }</Text>
-              <Text variant="bodyMedium">{ item.body }</Text>
+              <Text variant="bodyMedium">{ item.status['open'].content }</Text>
             </Card.Content>
             <Card.Actions>
-              <Button mode="text" onPress={() => router.push(item.action.path)}>{ item.action.text }</Button>
+              {status[item.uid] && <Button mode="text" onPress={() => router.push(item.status['open'].action.path)}>{ item.status['open'].action.text }</Button>}
             </Card.Actions>
           </Card>
         ))}

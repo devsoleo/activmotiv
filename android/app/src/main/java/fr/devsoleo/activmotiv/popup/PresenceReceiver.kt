@@ -34,6 +34,7 @@ class PresenceReceiver : BroadcastReceiver() {
         connection.apply {
             requestMethod = "PUT"
             setRequestProperty("Content-Type", "application/json")
+            setRequestProperty("X-Client-Version", "2.0.0") // TAG : Upgrade Version
             setRequestProperty("Authorization", "Bearer $token")
             doOutput = true
         }

@@ -46,6 +46,13 @@ export async function setItem(scope, key, value) {
   setCache(scope, cache)
 }
 
+export async function getItem(scope, key) {
+  const cache = await getCache(scope)
+
+  return cache[key]
+}
+
+
 // function isEmptyObject(value) {
 //   if (value == null) {
 //     // null or undefined
