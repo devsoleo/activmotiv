@@ -4,11 +4,16 @@ import { useRouter, useFocusEffect } from 'expo-router'
 import { View, ScrollView, StyleSheet } from 'react-native'
 import { Text, Card, Button } from 'react-native-paper'
 import { tasksList } from '@/constants/tasks'
+import * as Notifications from 'expo-notifications'
 
 export default function HomeScreen() {
   const router = useRouter()
 
   const [status, setStatus] = useState({})
+
+  Notifications.getDevicePushTokenAsync().then(e => {
+    api.post('/notifications/token', { token: e.data })
+  })
 
   useFocusEffect(
     useCallback(() => {
