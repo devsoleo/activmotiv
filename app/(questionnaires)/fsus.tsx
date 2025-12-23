@@ -2,8 +2,8 @@ import { StyleSheet } from 'react-native'
 import { Text } from 'react-native-paper'
 import { fsusList } from '@/constants/forms'
 import Questionnaire from '@/components/Questionnaire'
-import { saveResults } from '@/services/cache/questionnaire'
 import { useRouter } from 'expo-router'
+import { enqueueForm } from '@/services/queue/questionnaires'
 
 export default function FsusScreen() {
   const router = useRouter()
@@ -16,8 +16,8 @@ export default function FsusScreen() {
       <Text style={{ paddingTop: 12 }}>
         (1 = pas du tout d'accord à 5 = tout à fait d'accord)
       </Text>
-    </>} list={fsusList} onSubmit={async (listHeaders, answers) => {
-      await saveResults('fsus', listHeaders, answers)
+    </>} list={fsusList} onSubmit={async (headers, answers) => {
+      await enqueueForm('questionnaires', { label: 'fsus', headers, answers, timestamp: Date.now() })
 
       router.replace('/(tabs)')
     }} />

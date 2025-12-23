@@ -93,8 +93,6 @@ export default function LoginPage() {
       <TouchableOpacity onPress={handleSignupRedirect}>
         <Text style={styles.signupText}>Première connexion ?</Text>
       </TouchableOpacity>
-
-      <Text style={styles.signupText}>{process.env.EXPO_PUBLIC_API_URL}</Text>
     </View>
   )
 }

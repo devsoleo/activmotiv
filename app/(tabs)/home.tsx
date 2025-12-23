@@ -11,10 +11,6 @@ export default function HomeScreen() {
 
   const [status, setStatus] = useState({})
 
-  Notifications.getDevicePushTokenAsync().then(e => {
-    api.post('/notifications/token', { token: e.data })
-  })
-
   useFocusEffect(
     useCallback(() => {
       api.get('/tasks/status')
@@ -24,6 +20,10 @@ export default function HomeScreen() {
       })
       .catch((error) => {
         console.error(error)
+      })
+
+      Notifications.getDevicePushTokenAsync().then(e => {
+        api.post('/notifications/token', { token: e.data })
       })
     }, [])
   )

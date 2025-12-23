@@ -98,8 +98,8 @@ android {
         applicationId 'fr.devsoleo.activmotiv'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 15 // TAG : Upgrade Version
-        versionName "2.0.0" // TAG : Upgrade Version
+        versionCode 16 // TAG : Upgrade Version
+        versionName "3.0.0" // TAG : Upgrade Version
     }
     signingConfigs {
         debug {
@@ -109,10 +109,10 @@ android {
             keyPassword 'android'
         }
         release {
-			storeFile file(MYAPP_UPLOAD_STORE_FILE)
-			storePassword MYAPP_UPLOAD_STORE_PASSWORD
-			keyAlias MYAPP_UPLOAD_KEY_ALIAS
-			keyPassword MYAPP_UPLOAD_KEY_PASSWORD
+			storeFile file(System.getenv("ANDROID_KEYSTORE_PATH"))
+			storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+			keyAlias System.getenv("ANDROID_KEY_ALIAS")
+			keyPassword System.getenv("ANDROID_KEY_PASSWORD")
         }
     }
 

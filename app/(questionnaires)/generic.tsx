@@ -2,8 +2,8 @@ import { StyleSheet } from 'react-native'
 import { Text } from 'react-native-paper'
 import { attitudeList, intentionList, motivationList } from '@/constants/forms'
 import Questionnaire from '@/components/Questionnaire'
-import { saveResults } from '@/services/cache/questionnaire'
 import { useRouter } from 'expo-router'
+import { enqueueForm } from '@/services/queue/questionnaires'
 
 const shuffledGroups = [
   attitudeList.map(item => ({ ...item, type: 'motivation' })),
@@ -30,8 +30,8 @@ export default function GenericScreen() {
         Il vous suffira d'indiquer, sur des échelles de 1 à 7, ce qui correspond le mieux à votre opinion personnelle.
       </Text>
       <Text style={{ fontWeight: "bold", paddingTop: 12, textAlign: 'justify' }}>Répondez spontanément et sincèrement : il n'y a pas de bonne ou mauvaise réponse.</Text>
-    </>} list={genericList} onSubmit={async (listHeaders, answers) => {
-      await saveResults('generic', listHeaders, answers)
+    </>} list={genericList} onSubmit={async (headers, answers) => {
+      await enqueueForm('questionnaires', { label: 'generic', headers, answers, timestamp: Date.now() })
 
       router.replace('/(tabs)')
     }} />

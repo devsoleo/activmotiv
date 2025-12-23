@@ -41,5 +41,6 @@ yarn-error.*
 app-example
 
 credentials.json
+google-services.json
 .env
 *.keystore

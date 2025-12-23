@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { View, StyleSheet, TouchableOpacity, Dimensions, Image, Alert } from 'react-native'
+import { View, StyleSheet, Platform, TouchableOpacity, Dimensions, Image, Alert, KeyboardAvoidingView } from 'react-native'
 import { TextInput, Text, Button } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { api } from '@/services/api'
@@ -37,62 +37,60 @@ export default function Register() {
   }
 
   return (
-    <View style={styles.wrapper}>
-      <View style={styles.container}>
-        <Image
-          style={{
-            width: screenWidth,
-            height: undefined,
-            aspectRatio: 3,
-            resizeMode: 'contain',
-            alignSelf: 'center',
-            marginBottom: 45,
-          }}
-          source={require("@/assets/images/activmotiv.png")}
-        />
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.wrapper}>
+      <Image
+        style={{
+          width: screenWidth,
+          height: undefined,
+          aspectRatio: 3,
+          resizeMode: 'contain',
+          alignSelf: 'center',
+          marginBottom: 45,
+        }}
+        source={require("@/assets/images/activmotiv.png")}
+      />
 
-        <Text variant="headlineLarge" style={{ textAlign: 'center', marginBottom: 45 }}>Première connexion</Text>
+      <Text variant="headlineLarge" style={{ textAlign: 'center', marginBottom: 45 }}>Première connexion</Text>
 
-        <TextInput
-          label="Identifiant"
-          value={uid}
-          onChangeText={setUid}
-          autoCapitalize="none"
-          right={<TextInput.Affix text={uid.length + "/8"} />}
-          maxLength={8}
-          style={styles.input}
-        />
-        <TextInput
-          label="Créer un mot de passe"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry={isPasswordSecure}
-          right={<TextInput.Icon onPress={() => { isPasswordSecure ? setIsPasswordSecure(false) : setIsPasswordSecure(true) }} icon={isPasswordSecure ? "eye" : "eye-off" } />}
-          style={styles.input}
-        />
-        <TextInput
-          label="Confirmer le mot de passe"
-          value={passwordConfirm}
-          onChangeText={setPasswordConfirm}
-          secureTextEntry={isPasswordConfirmSecure}
-          right={<TextInput.Icon onPress={() => { isPasswordConfirmSecure ? setIsPasswordConfirmSecure(false) : setIsPasswordConfirmSecure(true) }} icon={isPasswordConfirmSecure ? "eye" : "eye-off" } />}
-          style={styles.input}
-        />
-        <Button
-          mode="contained"
-          onPress={handleRegister}
-          loading={loading}
-          disabled={loading}
-          style={styles.button}
-        >
-          Se connecter
-        </Button>
-      </View>
+      <TextInput
+        label="Identifiant"
+        value={uid}
+        onChangeText={setUid}
+        autoCapitalize="none"
+        right={<TextInput.Affix text={uid.length + "/8"} />}
+        maxLength={8}
+        style={styles.input}
+      />
+      <TextInput
+        label="Créer un mot de passe"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry={isPasswordSecure}
+        right={<TextInput.Icon onPress={() => { isPasswordSecure ? setIsPasswordSecure(false) : setIsPasswordSecure(true) }} icon={isPasswordSecure ? "eye" : "eye-off" } />}
+        style={styles.input}
+      />
+      <TextInput
+        label="Confirmer le mot de passe"
+        value={passwordConfirm}
+        onChangeText={setPasswordConfirm}
+        secureTextEntry={isPasswordConfirmSecure}
+        right={<TextInput.Icon onPress={() => { isPasswordConfirmSecure ? setIsPasswordConfirmSecure(false) : setIsPasswordConfirmSecure(true) }} icon={isPasswordConfirmSecure ? "eye" : "eye-off" } />}
+        style={styles.input}
+      />
+      <Button
+        mode="contained"
+        onPress={handleRegister}
+        loading={loading}
+        disabled={loading}
+        style={styles.button}
+      >
+        Se connecter
+      </Button>
 
-      <TouchableOpacity onPress={handleSignupRedirect}>
+      <TouchableOpacity style={{ marginTop: 64 }} onPress={handleSignupRedirect}>
         <Text style={styles.signupText}>Déjà inscrit ?</Text>
       </TouchableOpacity>
-    </View>
+    </KeyboardAvoidingView>
   )
 }
 
@@ -100,11 +98,7 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     padding: 16,
-    justifyContent: 'space-between',
-  },
-  container: {
     justifyContent: 'center',
-    flex: 1,
   },
   input: {
     marginBottom: 12,

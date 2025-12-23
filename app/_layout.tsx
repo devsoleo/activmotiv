@@ -3,6 +3,8 @@ import { PaperProvider } from 'react-native-paper'
 
 import { AuthProvider } from '@/contexts/auth'
 
+console.log(process.env.EXPO_PUBLIC_API_URL)
+
 const theme = {
   "colors": {
     "primary": "rgb(0, 99, 153)",

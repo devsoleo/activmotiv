@@ -69,8 +69,6 @@ export default function Questionnaire({ title, list, infos, onSubmit }) {
 
           if (missingAnswer != -1) return scrollToSection(missingAnswer)
 
-          console.log(listHeaders, answers)
-
           onSubmit(listHeaders, answers)
         }}>Valider mes réponses</Button>
       </View>

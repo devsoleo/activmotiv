@@ -17,7 +17,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "fr.devsoleo.activmotiv"
+      "package": "fr.devsoleo.activmotiv",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",
@@ -45,6 +46,13 @@
             "targetSdkVersion": 34,
             "buildToolsVersion": "34.0.0"
           }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/splash-icon.png",
+          "color": "#ffffff"
         }
       ],
       "react-native-edge-to-edge"
