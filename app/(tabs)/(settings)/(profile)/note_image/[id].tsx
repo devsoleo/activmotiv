@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useLocalSearchParams } from 'expo-router'
-import { Text, StyleSheet, View, Image, Dimensions, FlatList, TouchableOpacity } from 'react-native'
-import { Appbar, IconButton } from 'react-native-paper'
+import { StyleSheet, View, Image, Dimensions, FlatList, TouchableOpacity } from 'react-native'
+import { Text, Appbar, IconButton } from 'react-native-paper'
 import { illustrationsList, arousalList, valenceList } from '@/constants/images'
 import { api } from '@/services/api'
 import { getNetworkStateAsync } from 'expo-network'
@@ -129,10 +129,11 @@ export default function NoteImage() {
           aspectRatio: 16 / 9,
           resizeMode: 'cover',
         }}
-          source={illustrationsList.filter((i) => i.id == String(imageId))[0].source}
+        source={illustrationsList.filter((i) => i.id == String(imageId))[0].source}
         />
       </View>
-      <View>
+      <View style={{ marginTop: 20 }}>
+        <Text variant='titleMedium' style={{ textAlign: 'center', position: 'relative', top: 20 }}>Quand je regarde cette image, je me sens...</Text>
         <FlatList
           data={valenceList}
           renderItem={(item) => renderOption('valence', item, valence, setValence)}
@@ -141,6 +142,7 @@ export default function NoteImage() {
           scrollEnabled={false}
           contentContainerStyle={{ padding: padding }}
         />
+        <Text variant='titleMedium' style={{ textAlign: 'center', position: 'relative', top: 20 }}>Quand je regarde cette image, je la trouve...</Text>
         <FlatList
           data={arousalList}
           renderItem={(item) => renderOption('arousal', item, arousal, setArousal)}
@@ -150,17 +152,18 @@ export default function NoteImage() {
           contentContainerStyle={{ padding: padding }}
         />
       </View>
-      <View style={{ flex: 1, justifyContent: 'flex-end', marginBottom: 100 }}>
-          <IconButton
-            icon={ hidden ? 'eye-off' : 'eye'}
-            size={40}
-            onPress={() => {}}
-            iconColor={ hidden ? 'gray' : 'rgba(0, 99, 153, 0.7)'}
-            style={{ margin: 'auto' }}
-            onPressOut={() => {
-              setHidden(!hidden)
-            }}
-          />
+      <View style={{ marginTop: 20 }}>
+        <View style={{ flexDirection: "row", justifyContent: 'center', alignItems: 'center'}}>
+        <IconButton
+          icon={ hidden ? 'eye-off' : 'eye'}
+          size={40}
+          onPress={() => {}}
+          iconColor={ hidden ? 'gray' : 'rgba(0, 99, 153, 0.7)'}
+          onPressOut={() => {
+            setHidden(!hidden)
+          }}
+        />
+        </View>
         <View style={{ flexDirection: "row", justifyContent: 'center', alignItems: 'center'}}>
           <IconButton
             icon="chevron-left"
