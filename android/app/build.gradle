@@ -100,7 +100,9 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 16 // TAG : Upgrade Version
         versionName "3.0.0" // TAG : Upgrade Version
+        buildConfigField "String", "PUBLIC_API_URL", "\"${System.getenv("EXPO_PUBLIC_API_URL")}\""
     }
+
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -149,7 +151,6 @@ android {
 
 composeCompiler {
     reportsDestination = layout.buildDirectory.dir("compose_compiler")
-    stabilityConfigurationFile = rootProject.layout.projectDirectory.file("stability_config.conf")
 }
 
 // Apply static values from `gradle.properties` to the `android.packagingOptions`

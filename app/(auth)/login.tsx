@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View, StyleSheet, Alert, TouchableOpacity, Image, Dimensions } from 'react-native'
+import { View, StyleSheet, Alert, TouchableOpacity, Image, Dimensions, KeyboardAvoidingView } from 'react-native'
 import { TextInput, Button, Text } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { useSession } from '@/contexts/auth'
@@ -47,8 +47,7 @@ export default function LoginPage() {
   const screenWidth = Dimensions.get('window').width
 
   return (
-    <View style={styles.wrapper}>
-
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.wrapper}>
       <View style={styles.container}>
         <Image
           style={{
@@ -93,7 +92,7 @@ export default function LoginPage() {
       <TouchableOpacity onPress={handleSignupRedirect}>
         <Text style={styles.signupText}>Première connexion ?</Text>
       </TouchableOpacity>
-    </View>
+    </KeyboardAvoidingView>
   )
 }
 
@@ -101,7 +100,7 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     padding: 16,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
   },
   container: {
     justifyContent: 'center',

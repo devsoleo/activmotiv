@@ -43,14 +43,22 @@ jobs:
         ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
       run: |
         npm i
         cd ./android/
         chmod +x gradlew
         ./gradlew assembleRelease
+        ./gradlew app:bundleRelease
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: android-apk
         path: android/app/build/outputs/apk/release/app-release.apk
+
+    - name: Upload AAB
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-aab
+        path: android/app/build/outputs/bundle/release/app-release.aab

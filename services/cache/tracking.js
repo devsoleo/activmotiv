@@ -2,12 +2,10 @@ import { getItem, setItem } from '../cache'
 import { api } from '../api'
 
 export function syncWithServer() {
-
-  // TODO : Add PUT
-
-  api.get('/tracking')
+  api.get('/tracking/opening')
   .then((response) => response.data)
   .then(async (data) => {
+    console.log(data)
     await setItem('tracking', 'amount', data.amount)
     await setItem('tracking', 'opening', data.opening)
   })

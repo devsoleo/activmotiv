@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +17,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import fr.devsoleo.activmotiv.R
+import fr.devsoleo.activmotiv.api.Api
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 class ImagesActivity : ComponentActivity() {
     private var exposureTime : Long = 0
@@ -29,6 +33,22 @@ class ImagesActivity : ComponentActivity() {
         val currentTime = System.currentTimeMillis()
         exposureTime = currentTime - exposureTime
         return currentTime
+    }
+
+    private fun saveMeasurement(time: Long, duration: Long) {
+        GlobalScope.launch {
+            val api = Api(applicationContext)
+
+            try {
+                val accessToken = api.authenticate()
+
+                if (accessToken != null) {
+                    api.put("/tracking/opening", accessToken, """{ "timestamp": $time, "duration": $duration, "images": { "top": 0, "bottom": 0 } }""")
+                }
+            } catch (e: Exception) {
+                Log.e("Error", e.message!!)
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,11 +73,19 @@ class ImagesActivity : ComponentActivity() {
         super.onResume()
         startExposureClock()
     }
+
+    override fun onStop() {
+        super.onStop()
+        if (!skip) {
+            val time = stopExposureClock()
+            saveMeasurement(time, exposureTime)
+        }
+        skip = false
+    }
 }
 
- @Composable
- fun StackedImages() {
-
+@Composable
+fun StackedImages() {
     val sportIllustrations: List<Int> = listOf(
         R.drawable.ap1,
         R.drawable.ap2,
@@ -95,26 +123,26 @@ class ImagesActivity : ComponentActivity() {
         R.drawable.pos16
     )
 
-     Column(
-         modifier = Modifier.fillMaxSize(),
-         verticalArrangement = Arrangement.SpaceEvenly,
-         horizontalAlignment = Alignment.CenterHorizontally
-     ) {
-         Image(
-             painter = painterResource(sportIllustrations.random()),
-             contentScale = ContentScale.Crop,
-             modifier = Modifier
-                 .weight(1f)
-                 .fillMaxWidth(),
-             contentDescription = "sport_illustration",
-         )
-         Image(
-             painter = painterResource(positiveIllustrations.random()),
-             modifier = Modifier
-                 .weight(1f)
-                 .fillMaxWidth(),
-             contentScale = ContentScale.Crop,
-             contentDescription = "positive_illustration",
-         )
-     }
- }
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.SpaceEvenly,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Image(
+            painter = painterResource(sportIllustrations.random()),
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            contentDescription = "sport_illustration",
+        )
+        Image(
+            painter = painterResource(positiveIllustrations.random()),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            contentScale = ContentScale.Crop,
+            contentDescription = "positive_illustration",
+        )
+    }
+}
