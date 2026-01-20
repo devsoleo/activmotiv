@@ -10,8 +10,8 @@ import java.net.HttpURLConnection
 import java.net.URL
 import fr.devsoleo.activmotiv.BuildConfig
 
-private const val API_VERSION = "3.0.0" // TAG : Upgrade Version
-private const val PUBLIC_API_URL = BuildConfig.PUBLIC_API_URL // http://10.0.2.2:3000
+private const val API_VERSION = BuildConfig.VERSION_NAME
+private const val PUBLIC_API_URL = BuildConfig.PUBLIC_API_URL
 
 class Api(private val ctx: Context) {
     suspend fun authenticate(): String? {

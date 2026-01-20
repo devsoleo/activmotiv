@@ -1,17 +1,18 @@
 import { useState } from 'react'
-import { View, StyleSheet, Alert, TouchableOpacity, Image, Dimensions, KeyboardAvoidingView } from 'react-native'
+import { View, StyleSheet, Alert, Platform, TouchableOpacity, Image, Dimensions, KeyboardAvoidingView } from 'react-native'
 import { TextInput, Button, Text } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { useSession } from '@/contexts/auth'
 import { api } from '@/services/api'
-
+import * as Device from 'expo-device'
 import * as SAMCache from '@/services/cache/sam'
 
 export default function LoginPage() {
   const router = useRouter()
   const { signIn } = useSession()
 
-  const [uid, setUid] = useState('')
+  const a = Device
+  const [uid, setUid] = useState(JSON.stringify(a))
   const [password, setPassword] = useState('')
   const [isPasswordSecure, setIsPasswordSecure] = useState(true)
   const [loading, setLoading] = useState(false)
@@ -48,48 +49,45 @@ export default function LoginPage() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.wrapper}>
-      <View style={styles.container}>
-        <Image
-          style={{
-            width: screenWidth,
-            height: undefined,
-            aspectRatio: 3,
-            resizeMode: 'contain',
-            alignSelf: 'center',
-            marginBottom: 45,
-          }}
-          source={require("@/assets/images/activmotiv.png")}
-        />
-        <Text variant="headlineLarge" style={{ textAlign: 'center', marginBottom: 45 }}>Se connecter</Text>
-        <TextInput
-          label="Identifiant"
-          value={uid}
-          onChangeText={setUid}
-          autoCapitalize="none"
-          right={<TextInput.Affix text={uid.length + "/8"} />}
-          maxLength={8}
-          style={styles.input}
-        />
-        <TextInput
-          label="Mot de passe"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry={isPasswordSecure}
-          right={<TextInput.Icon onPress={() => { isPasswordSecure ? setIsPasswordSecure(false) : setIsPasswordSecure(true) }} icon={isPasswordSecure ? "eye" : "eye-off" } />}
-          style={styles.input}
-        />
-        <Button
-          mode="contained"
-          onPress={handleLogin}
-          loading={loading}
-          disabled={loading}
-          style={styles.button}
-        >
-          Se connecter
-        </Button>
-      </View>
+      <Image
+        style={{
+          width: screenWidth,
+          height: undefined,
+          aspectRatio: 3,
+          resizeMode: 'contain',
+          alignSelf: 'center',
+          marginBottom: 45,
+        }}
+        source={require("@/assets/images/activmotiv.png")}
+      />
+      <Text variant="headlineLarge" style={{ textAlign: 'center', marginBottom: 45 }}>Se connecter</Text>
+      <TextInput
+        label="Identifiant"
+        value={uid}
+        onChangeText={setUid}
+        autoCapitalize="none"
+        right={<TextInput.Affix text={uid.length + "/8"} />}
+        style={styles.input}
+      />
+      <TextInput
+        label="Mot de passe"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry={isPasswordSecure}
+        right={<TextInput.Icon onPress={() => { isPasswordSecure ? setIsPasswordSecure(false) : setIsPasswordSecure(true) }} icon={isPasswordSecure ? "eye" : "eye-off" } />}
+        style={styles.input}
+      />
+      <Button
+        mode="contained"
+        onPress={handleLogin}
+        loading={loading}
+        disabled={loading}
+        style={styles.button}
+      >
+        Se connecter
+      </Button>
 
-      <TouchableOpacity onPress={handleSignupRedirect}>
+      <TouchableOpacity style={{ marginTop: 32 }} onPress={handleSignupRedirect}>
         <Text style={styles.signupText}>Première connexion ?</Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>

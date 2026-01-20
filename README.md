@@ -12,5 +12,7 @@ Modifier les variables d'environnements présentes dans devrun.sh
 Puis lancer ./devrun.sh
 
 ### Build local
+sudo archlinux-java set java-17-openjdk
+
 APK : .\gradlew assembleRelease
 AAB : .\gradlew app:bundleRelease

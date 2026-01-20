@@ -98,9 +98,13 @@ android {
         applicationId 'fr.devsoleo.activmotiv'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 16 // TAG : Upgrade Version
-        versionName "3.0.0" // TAG : Upgrade Version
+
+        versionCode 16
+        versionName "3.0.0"
+
         buildConfigField "String", "PUBLIC_API_URL", "\"${System.getenv("EXPO_PUBLIC_API_URL")}\""
+        buildConfigField "int", "VERSION_CODE", "${versionCode}"
+        buildConfigField "String", "VERSION_NAME", "\"${versionName}\""
     }
 
     signingConfigs {

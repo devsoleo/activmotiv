@@ -87,7 +87,7 @@ export default function Register() {
         Se connecter
       </Button>
 
-      <TouchableOpacity style={{ marginTop: 64 }} onPress={handleSignupRedirect}>
+      <TouchableOpacity style={{ marginTop: 32 }} onPress={handleSignupRedirect}>
         <Text style={styles.signupText}>Déjà inscrit ?</Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>
