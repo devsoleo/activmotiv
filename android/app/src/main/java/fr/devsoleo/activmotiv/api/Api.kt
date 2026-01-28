@@ -9,21 +9,28 @@ import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
 import fr.devsoleo.activmotiv.BuildConfig
+import android.util.Log
 
 private const val API_VERSION = BuildConfig.VERSION_NAME
 private const val PUBLIC_API_URL = BuildConfig.PUBLIC_API_URL
 
 class Api(private val ctx: Context) {
-    suspend fun authenticate(): String? {
+    suspend fun getAccessToken(): String? {
         return try {
             val asyncStorage = StorageModule.getStorageInstance(ctx)
 
             val entries: List<Entry> = asyncStorage.getValues(listOf("accessToken"))
 
-            entries.find { it.key == "accessToken" }?.value.toString()
+            entries
+                .firstOrNull { it.key == "accessToken" }
+                ?.value
         } catch (e: Exception) {
             null
         }
+    }
+
+    suspend fun isAuthenticated(): Boolean {
+        return (this.getAccessToken() != null)
     }
 
     suspend fun put(path: String, token: String?, json: String): String = withContext(Dispatchers.IO) {

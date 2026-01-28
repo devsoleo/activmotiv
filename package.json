@@ -1,7 +1,7 @@
 {
   "name": "activmotiv",
   "main": "expo-router/entry",
-  "version": "3.0.0",
+  "version": "3.0.2",
   "scripts": {
     "start": "npx expo run:android",
     "reset-project": "node ./scripts/reset-project.js",

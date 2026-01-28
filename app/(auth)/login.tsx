@@ -4,15 +4,13 @@ import { TextInput, Button, Text } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { useSession } from '@/contexts/auth'
 import { api } from '@/services/api'
-import * as Device from 'expo-device'
 import * as SAMCache from '@/services/cache/sam'
 
 export default function LoginPage() {
   const router = useRouter()
   const { signIn } = useSession()
 
-  const a = Device
-  const [uid, setUid] = useState(JSON.stringify(a))
+  const [uid, setUid] = useState('')
   const [password, setPassword] = useState('')
   const [isPasswordSecure, setIsPasswordSecure] = useState(true)
   const [loading, setLoading] = useState(false)
@@ -67,6 +65,7 @@ export default function LoginPage() {
         onChangeText={setUid}
         autoCapitalize="none"
         right={<TextInput.Affix text={uid.length + "/8"} />}
+        maxLength={8}
         style={styles.input}
       />
       <TextInput

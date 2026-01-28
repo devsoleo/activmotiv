@@ -40,10 +40,8 @@ class ImagesActivity : ComponentActivity() {
             val api = Api(applicationContext)
 
             try {
-                val accessToken = api.authenticate()
-
-                if (accessToken != null) {
-                    api.put("/tracking/opening", accessToken, """{ "timestamp": $time, "duration": $duration, "images": { "top": 0, "bottom": 0 } }""")
+                if (api.isAuthenticated()) {
+                    api.put("/tracking/opening", api.getAccessToken(), """{ "timestamp": $time, "duration": $duration, "images": { "top": 0, "bottom": 0 } }""")
                 }
             } catch (e: Exception) {
                 Log.e("Error", e.message!!)
