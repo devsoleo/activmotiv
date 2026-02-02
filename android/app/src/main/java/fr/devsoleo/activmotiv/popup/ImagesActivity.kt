@@ -43,7 +43,7 @@ class ImagesActivity : ComponentActivity() {
 
             try {
                 if (api.isAuthenticated()) {
-                    api.put("/tracking/opening", api.getAccessToken(), """{ "timestamp": $time, "duration": $duration, "images": { "top": $top, "bottom": $bottom } }""")
+                    api.put("/analytics/popup", api.getAccessToken(), """{ "timestamp": $time, "duration": $duration, "images": { "top": $top, "bottom": $bottom } }""")
                 }
             } catch (e: Exception) {
                 Log.e("Error", e.message!!)

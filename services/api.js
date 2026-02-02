@@ -1,13 +1,15 @@
 import axios from 'axios'
 import { getStorageItem } from './storage'
 import { callSignOut } from "@/contexts/authManager"
-import { version } from '../package.json'
+
+const PUBLIC_API_URL = process.env.EXPO_PUBLIC_API_URL
+const APP_VERSION = process.env.npm_package_version
 
 export const api = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL,
+  baseURL: PUBLIC_API_URL,
   headers: {
     'Content-Type': 'application/json',
-    'X-Client-Version': version
+    'X-Client-Version': APP_VERSION
   }
 })
 

@@ -1,11 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { api } from '@/services/api'
 
-export async function enqueueForm(key, data) {
+export async function enqueueForm(key, label, payload) {
   const queue = JSON.parse(await AsyncStorage.getItem(key)) || []
 
   queue.push({
-    payload: data,
+    label,
+    payload,
     status: 'pending'
   })
 
@@ -19,7 +20,9 @@ export async function syncForms(key) {
   const remaining = []
 
   for (const item of queue) {
-    await api.put(`/questionnaires/queue`, { item: item.payload }).then(() => {
+    const { payload, label } = item
+
+    await api.post(`/questionnaires/${label}`, { data: payload }).then(() => {
       console.log("Queue synchronized !", key)
     }).catch((e) => {
       console.log(e)

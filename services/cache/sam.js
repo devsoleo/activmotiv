@@ -41,6 +41,7 @@ export async function addImage(image) {
 // R
 export async function getImage(imageId) {
   const cache = await getCache("sam")
+  console.log("sam cache", cache)
   const image = cache.find(item => item.image === imageId)
 
   return image

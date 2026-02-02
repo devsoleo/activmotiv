@@ -5,6 +5,8 @@ import { View, ScrollView, StyleSheet } from 'react-native'
 import { Text, Card, Button } from 'react-native-paper'
 import { tasksList } from '@/constants/tasks'
 import * as Notifications from 'expo-notifications'
+import * as Device from 'expo-device'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export default function HomeScreen() {
   const router = useRouter()
@@ -23,8 +25,18 @@ export default function HomeScreen() {
       })
 
       Notifications.getDevicePushTokenAsync().then(e => {
-        api.post('/notifications/token', { token: e.data })
+        api.put('/notifications/token', { fcmToken: e.data })
       })
+
+      const registerDevice = async () => {
+        const androidId = await AsyncStorage.getItem('androidId')
+
+        if (!androidId) console.log('androidId manquant')
+
+        await api.put('/telemetry/device', { androidId, device: Device })
+      }
+
+      registerDevice()
     }, [])
   )
 

@@ -4,6 +4,7 @@ import { useStorageState } from './useStorageState'
 import { useRouter } from 'expo-router'
 
 import { setSignOut } from './authManager'
+import { Alert } from 'react-native'
 
 type AuthContextType = {
   signIn: (accessToken: string) => void

@@ -11,6 +11,15 @@ import com.facebook.react.defaults.DefaultReactActivityDelegate
 
 import expo.modules.ReactActivityDelegateWrapper
 import android.content.Intent
+import android.content.Context
+import android.provider.Settings
+import androidx.lifecycle.lifecycleScope
+import com.reactnativecommunity.asyncstorage.next.Entry
+import com.reactnativecommunity.asyncstorage.next.StorageModule
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import android.util.Log
 
 class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,7 +32,28 @@ class MainActivity : ReactActivity() {
     // @generated end expo-splashscreen
     super.onCreate(null)
 
-    // AUTO-OPEN
+    // Device Identification
+    val androidId = Settings.Secure.getString(
+        applicationContext.contentResolver,
+        Settings.Secure.ANDROID_ID
+    )
+
+    val asyncStorage = StorageModule.getStorageInstance(applicationContext)
+
+    lifecycleScope.launch {
+        asyncStorage.setValues(listOf(Entry(
+            key = "androidId",
+            value = androidId
+        )))
+
+        val entries: List<Entry> = asyncStorage.getValues(listOf("androidId"))
+
+        val a = entries
+            .firstOrNull { it.key == "androidId" }
+            ?.value
+    }
+
+    // Popup
     val serviceIntent = Intent(applicationContext, MainService::class.java)
     applicationContext.startForegroundService(serviceIntent)
   }

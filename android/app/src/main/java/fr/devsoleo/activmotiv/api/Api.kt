@@ -21,6 +21,9 @@ class Api(private val ctx: Context) {
 
             val entries: List<Entry> = asyncStorage.getValues(listOf("accessToken"))
 
+            val entries_sam: List<Entry> = asyncStorage.getValues(listOf("cache_sam"))
+            val i = entries_sam.first()
+
             entries
                 .firstOrNull { it.key == "accessToken" }
                 ?.value

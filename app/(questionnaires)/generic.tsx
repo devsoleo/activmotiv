@@ -30,8 +30,8 @@ export default function GenericScreen() {
         Il vous suffira d'indiquer, sur des échelles de 1 à 7, ce qui correspond le mieux à votre opinion personnelle.
       </Text>
       <Text style={{ fontWeight: "bold", paddingTop: 12, textAlign: 'justify' }}>Répondez spontanément et sincèrement : il n'y a pas de bonne ou mauvaise réponse.</Text>
-    </>} list={genericList} onSubmit={async (headers, answers) => {
-      await enqueueForm('questionnaires', { label: 'generic', headers, answers, timestamp: Date.now() })
+    </>} list={genericList} onSubmit={async (headers, results) => {
+      await enqueueForm('questionnaires', 'generic', { headers, results, timestamp: Date.now() })
 
       router.replace('/(tabs)')
     }} />

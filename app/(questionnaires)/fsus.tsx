@@ -16,8 +16,8 @@ export default function FsusScreen() {
       <Text style={{ paddingTop: 12 }}>
         (1 = pas du tout d'accord à 5 = tout à fait d'accord)
       </Text>
-    </>} list={fsusList} onSubmit={async (headers, answers) => {
-      await enqueueForm('questionnaires', { label: 'fsus', headers, answers, timestamp: Date.now() })
+    </>} list={fsusList} onSubmit={async (headers, results) => {
+      await enqueueForm('questionnaires', 'fsus', { headers, results, timestamp: Date.now() })
 
       router.replace('/(tabs)')
     }} />
