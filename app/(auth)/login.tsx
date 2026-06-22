@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View, StyleSheet, Alert, Platform, TouchableOpacity, Image, Dimensions, KeyboardAvoidingView } from 'react-native'
+import { StyleSheet, Alert, Platform, TouchableOpacity, Image, Dimensions, KeyboardAvoidingView } from 'react-native'
 import { TextInput, Button, Text } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { useSession } from '@/contexts/auth'
@@ -12,7 +12,6 @@ export default function LoginPage() {
 
   const [uid, setUid] = useState('')
   const [password, setPassword] = useState('')
-  const [server, setServer] = useState(process.env.EXPO_PUBLIC_API_URL)
 
   const [isPasswordSecure, setIsPasswordSecure] = useState(true)
   const [loading, setLoading] = useState(false)
@@ -90,7 +89,6 @@ export default function LoginPage() {
 
       <TouchableOpacity style={{ marginTop: 32 }} onPress={handleSignupRedirect}>
         <Text style={styles.signupText}>Première connexion ?</Text>
-        <Text>{ server }</Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>
   )

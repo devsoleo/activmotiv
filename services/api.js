@@ -4,7 +4,7 @@ import { callSignOut } from "@/contexts/authManager"
 import { version } from '@/package.json'
 
 const PUBLIC_API_URL = process.env.EXPO_PUBLIC_API_URL
-const APP_VERSION = version
+const APP_VERSION = version || process.env.npm_package_version
 
 export const api = axios.create({
   baseURL: PUBLIC_API_URL,
