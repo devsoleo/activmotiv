@@ -1,10 +1,11 @@
 import { useState, useRef, createRef } from 'react'
 import { View, StyleSheet, ScrollView } from 'react-native'
-import { Text, Button, Card, RadioButton } from 'react-native-paper'
+import { Text, Button, Card, RadioButton, useTheme } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import InformationFrame from './InformationFrame'
 
 export default function Questionnaire({ title, list, infos, onSubmit }) {
+  const theme = useTheme()
   const [hasSubmit, setHasSubmit] = useState(false)
 
   const listHeaders = list.map(item => item.uid)
@@ -32,8 +33,8 @@ export default function Questionnaire({ title, list, infos, onSubmit }) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1}}>
-      <Text variant="headlineLarge" style={styles.title}>{ title }</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <Text variant="headlineLarge" style={[styles.title, { color: theme.colors.onBackground }]}>{ title }</Text>
 
       <InformationFrame actionName="Commencer le questionnaire" content={infos} />
 

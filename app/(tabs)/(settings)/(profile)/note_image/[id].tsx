@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { StyleSheet, View, Image, Dimensions, FlatList, TouchableOpacity } from 'react-native'
-import { Text, Appbar, IconButton } from 'react-native-paper'
+import { Text, Appbar, IconButton, useTheme } from 'react-native-paper'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { illustrationsList, arousalList, valenceList } from '@/constants/images'
 import { api } from '@/services/api'
 import { getNetworkStateAsync } from 'expo-network'
@@ -10,6 +11,7 @@ import * as SAMCache from '@/services/cache/sam'
 export default function NoteImage() {
   const router = useRouter()
   const { id } = useLocalSearchParams()
+  const theme = useTheme()
 
   const [imageId, setImageId] = useState(Number(id))
   const [valence, setValence] = useState(null)
@@ -90,14 +92,14 @@ export default function NoteImage() {
     sendRating()
   }, [valence, arousal, hidden])
 
-  const renderOption = (variant, { item }, selectedId, setSelectedId) => (
+  const renderOption = (variant: string, { item }: { item: any }, selectedId: number | null, setSelectedId: (val: any) => void) => (
     <TouchableOpacity
       onPress={() => {
         setSelectedId(Number(item.id))
       }}
       style={{ marginTop: 60 }}>
-      {item.id == 1 ? <Text style={{ position: 'absolute', top: -20 }}>{ variant == 'valence' ? 'Très calme \\ très détendu' : 'Très désagréable / négative'}</Text> : <Text></Text>}
-      {item.id == 5 ? <Text style={{ position: 'absolute', left: 6, top: -20}}>{ variant == 'valence' ? 'Surexcité / très stimulé' : 'Très agréable / positive'}</Text> : <Text></Text>}
+      {item.id == '1' ? <Text style={{ position: 'absolute', top: -20 }}>{ variant == 'valence' ? 'Très calme \\ très détendu' : 'Très désagréable / négative'}</Text> : null}
+      {item.id == '5' ? <Text style={{ position: 'absolute', left: 6, top: -20}}>{ variant == 'valence' ? 'Surexcité / très stimulé' : 'Très agréable / positive'}</Text> : null}
 
       <Image
         source={item.source}
@@ -109,6 +111,7 @@ export default function NoteImage() {
             margin: margin,
             marginTop: item.id == 5 || item.id == 1 ? 20 : 0,
             borderWidth: item.id == selectedId ? 2 : 0,
+            borderColor: theme.colors.primary,
           },
         ]}
       />
@@ -116,7 +119,7 @@ export default function NoteImage() {
   )
 
   return (
-    <>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => {router.back()}} />
         <Appbar.Content title="Mes images" />
@@ -158,7 +161,7 @@ export default function NoteImage() {
           icon={ hidden ? 'eye-off' : 'eye'}
           size={40}
           onPress={() => {}}
-          iconColor={ hidden ? 'gray' : 'rgba(0, 99, 153, 0.7)'}
+          iconColor={ hidden ? 'gray' : theme.colors.primary}
           onPressOut={() => {
             setHidden(!hidden)
           }}
@@ -170,18 +173,18 @@ export default function NoteImage() {
             size={40}
             onPress={() => setImageId(imageId - 1)}
             disabled={imageId <= 1}
-            iconColor='rgba(0, 99, 153, 0.7)'
+            iconColor={theme.colors.primary}
           />
           <IconButton
             icon="chevron-right"
             size={40}
             onPress={() => setImageId(imageId + 1)}
             disabled={imageId >= illustrationsList.length}
-            iconColor='rgba(0, 99, 153, 0.7)'
+            iconColor={theme.colors.primary}
           />
         </View>
       </View>
-    </>
+    </SafeAreaView>
   )
 }
 

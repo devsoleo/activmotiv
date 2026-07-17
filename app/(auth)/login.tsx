@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { StyleSheet, Alert, Platform, TouchableOpacity, Image, Dimensions, KeyboardAvoidingView } from 'react-native'
-import { TextInput, Button, Text } from 'react-native-paper'
+import { TextInput, Button, Text, useTheme } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { useSession } from '@/contexts/auth'
 import { api } from '@/services/api'
@@ -9,6 +9,7 @@ import * as SAMCache from '@/services/cache/sam'
 export default function LoginPage() {
   const router = useRouter()
   const { signIn } = useSession()
+  const theme = useTheme()
 
   const [uid, setUid] = useState('')
   const [password, setPassword] = useState('')
@@ -35,7 +36,7 @@ export default function LoginPage() {
       } else {
         Alert.alert('Erreur', 'Identifiants invalides')
       }
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert('Erreur', error.message)
       console.error(error)
     } finally {
@@ -47,7 +48,7 @@ export default function LoginPage() {
   const screenWidth = Dimensions.get('window').width
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.wrapper}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={[styles.wrapper, { backgroundColor: theme.colors.background }]}>
       <Image
         style={{
           width: screenWidth,
@@ -88,7 +89,7 @@ export default function LoginPage() {
       </Button>
 
       <TouchableOpacity style={{ marginTop: 32 }} onPress={handleSignupRedirect}>
-        <Text style={styles.signupText}>Première connexion ?</Text>
+        <Text style={[styles.signupText, { color: theme.colors.primary }]}>Première connexion ?</Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>
   )
@@ -112,7 +113,6 @@ const styles = StyleSheet.create({
   },
   signupText: {
     textAlign: 'center',
-    color: '#1e90ff',
     marginBottom: 64,
   },
 })

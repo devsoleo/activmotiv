@@ -2,16 +2,17 @@ import { useState, useCallback } from 'react'
 import { api } from '@/services/api'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { View, ScrollView, StyleSheet } from 'react-native'
-import { Text, Card, Button } from 'react-native-paper'
+import { Text, Card, Button, useTheme } from 'react-native-paper'
 import { tasksList } from '@/constants/tasks'
 import * as Notifications from 'expo-notifications'
 import * as Device from 'expo-device'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export default function HomeScreen() {
+  const theme = useTheme()
   const router = useRouter()
 
-  const [status, setStatus] = useState({})
+  const [status, setStatus] = useState<Record<string, any>>({})
 
   useFocusEffect(
     useCallback(() => {
@@ -41,8 +42,8 @@ export default function HomeScreen() {
   )
 
   return (
-    <View style={{ flex: 1 }}>
-      <Text variant="headlineLarge" style={styles.title}>Accueil</Text>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <Text variant="headlineLarge" style={styles.title}>Questionnaires</Text>
       <ScrollView>
         {tasksList.map((item) => (
           <Card key={item.id} style={{ margin: 10, opacity: status[item.uid] ? 1 : 0.5 }} mode={(status[item.uid]) ? 'elevated' : 'contained'}>
@@ -51,7 +52,11 @@ export default function HomeScreen() {
               <Text variant="bodyMedium">{ item.status['open'].content }</Text>
             </Card.Content>
             <Card.Actions>
-              {status[item.uid] && <Button mode="text" onPress={() => router.push(item.status['open'].action.path)}>{ item.status['open'].action.text }</Button>}
+              {(() => {
+                if (!status[item.uid]) return null
+                const path: any = item.status['open'].action.path
+                return <Button mode="text" onPress={() => router.push(path)}>{ item.status['open'].action.text }</Button>
+              })()}
             </Card.Actions>
           </Card>
         ))}

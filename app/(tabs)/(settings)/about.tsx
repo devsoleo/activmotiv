@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router'
 import { View, StyleSheet, ScrollView } from 'react-native'
-import { Appbar, Text } from 'react-native-paper'
+import { Appbar, Text, useTheme } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 const styles = StyleSheet.create({
@@ -14,9 +14,10 @@ const styles = StyleSheet.create({
 
 export default function About() {
   const router = useRouter()
+  const theme = useTheme()
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <ScrollView>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => {router.back()}} />

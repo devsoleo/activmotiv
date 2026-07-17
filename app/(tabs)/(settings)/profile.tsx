@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { ScrollView, StyleSheet, View, Linking } from 'react-native'
-import { Appbar, TextInput, Text, Button, Snackbar } from 'react-native-paper'
+import { Appbar, TextInput, Text, Button, Snackbar, useTheme } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Clipboard from '@react-native-clipboard/clipboard'
 import { Buffer } from 'buffer'
@@ -12,6 +12,7 @@ import { getNetworkStateAsync } from 'expo-network'
 export default function Profile() {
   const router = useRouter()
   const { accessToken } = useSession()
+  const theme = useTheme()
 
   const [currentPassword, setCurrentPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -30,7 +31,7 @@ export default function Profile() {
   if (accessToken != null && accessToken != undefined) uid = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())["uid"]
 
   return (
-    <SafeAreaView style={{ flex: 1}}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <ScrollView keyboardShouldPersistTaps="always">
         <Appbar.Header>
           <Appbar.BackAction onPress={() => {router.back()}} />

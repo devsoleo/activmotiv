@@ -1,11 +1,12 @@
 import * as React from 'react'
 import { View, StyleSheet, Platform, TouchableOpacity, Dimensions, Image, Alert, KeyboardAvoidingView } from 'react-native'
-import { TextInput, Text, Button } from 'react-native-paper'
+import { TextInput, Text, Button, useTheme } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { api } from '@/services/api'
 
 export default function Register() {
   const router = useRouter()
+  const theme = useTheme()
 
   const [uid, setUid] = React.useState('')
   const [password, setPassword] = React.useState('')
@@ -28,7 +29,7 @@ export default function Register() {
       } else {
         Alert.alert('Erreur', 'Identifiants invalides')
       }
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert('Erreur', 'Une erreur est survenue')
       console.error(error)
     } finally {
@@ -37,7 +38,7 @@ export default function Register() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.wrapper}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={[styles.wrapper, { backgroundColor: theme.colors.background }]}>
       <Image
         style={{
           width: screenWidth,
@@ -88,7 +89,7 @@ export default function Register() {
       </Button>
 
       <TouchableOpacity style={{ marginTop: 32 }} onPress={handleSignupRedirect}>
-        <Text style={styles.signupText}>Déjà inscrit ?</Text>
+        <Text style={[styles.signupText, { color: theme.colors.primary }]}>Déjà inscrit ?</Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>
   )
@@ -108,7 +109,6 @@ const styles = StyleSheet.create({
   },
   signupText: {
     textAlign: 'center',
-    color: '#1e90ff',
     marginBottom: 64,
   },
 })

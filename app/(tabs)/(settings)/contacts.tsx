@@ -1,12 +1,14 @@
 import { useRouter } from 'expo-router'
 import { Linking, StyleSheet } from 'react-native'
-import { Text, Appbar, List } from 'react-native-paper'
+import { Text, Appbar, List, useTheme } from 'react-native-paper'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function Contacts() {
   const router = useRouter()
+  const theme = useTheme()
 
   return (
-    <>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => {router.back()}} />
         <Appbar.Content title="Contacts" />
@@ -43,7 +45,7 @@ export default function Contacts() {
         onPress={() => Linking.openURL('https://maps.app.goo.gl/uUDVRczFo4hFUuaS8')}
         left={props => <List.Icon {...props} icon="map-marker" />}
       />
-    </>
+    </SafeAreaView>
   )
 }
 

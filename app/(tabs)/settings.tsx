@@ -1,28 +1,23 @@
 import { useRouter } from 'expo-router'
 import { StyleSheet, Linking } from 'react-native'
-import { Text, Divider, List } from 'react-native-paper'
+import { Text, Divider, List, useTheme } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { useSession } from '@/contexts/auth'
 
 export default function SettingsScreen() {
+  const theme = useTheme()
   const { signOut } = useSession()
   const router = useRouter()
 
   return (
-    <SafeAreaView style={{ flex: 1}}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <Text variant="headlineLarge" style={styles.title}>Paramètres</Text>
 
       <List.Item
         onPress={() => router.push("./(settings)/profile")}
         title={<Text variant="titleMedium" style={styles.menu}>Mon profil</Text>}
         left={props => <List.Icon {...props} icon="account" />}
-      />
-      <Divider />
-      <List.Item
-        onPress={() => router.push("./(settings)/images")}
-        title={<Text variant="titleMedium" style={styles.menu}>Mes images</Text>}
-        left={props => <List.Icon {...props} icon="camera" />}
       />
       <Divider />
       <List.Item
