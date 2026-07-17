@@ -9,9 +9,9 @@ export default function Home() {
   const [index, setIndex] = useState(0)
 
   const [routes] = useState([
-    { key: 'home', title: 'Accueil', icon: 'home' },
-    { key: 'tracking', title: 'Suivi', icon: 'map-marker' },
-    { key: 'settings', title: 'Paramètres', icon: 'cog' },
+    { key: 'home', title: 'Questionnaires', icon: 'clipboard-text-outline' },
+    { key: 'tracking', title: 'Suivi', icon: 'map-marker-outline' },
+    { key: 'settings', title: 'Paramètres', icon: 'cog-outline' },
   ])
 
   const [scenes] = useState({

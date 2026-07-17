@@ -53,14 +53,19 @@ jobs:
         ./gradlew assembleRelease
         ./gradlew app:bundleRelease
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: android-apk
-        path: android/app/build/outputs/apk/release/app-release.apk
+    - name: Stocker l'APK et l'AAB sur le runner
+      run: |
+        # Racine d'installation du runner = parent de _work (= parent de RUNNER_WORKSPACE)
+        RUNNER_ROOT="$(dirname "$(dirname "$RUNNER_WORKSPACE")")"
+        BASE="$RUNNER_ROOT/artifacts/${{ github.ref_name }}"
+        DEST="$BASE/${{ github.run_number }}"
+        mkdir -p "$DEST"
 
-    - name: Upload AAB
-      uses: actions/upload-artifact@v4
-      with:
-        name: android-aab
-        path: android/app/build/outputs/bundle/release/app-release.aab
+        cp android/app/build/outputs/apk/release/app-release.apk "$DEST/"
+        cp android/app/build/outputs/bundle/release/app-release.aab "$DEST/"
+
+        ln -sfn "$DEST" "$BASE/latest"
+
+        ls -1dt "$BASE"/*/ 2>/dev/null | grep -v '/latest/$' | tail -n +11 | xargs -r rm -rf
+
+        echo "APK et AAB stockés dans $DEST"
