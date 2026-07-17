@@ -234,7 +234,7 @@ class ImagesActivity : ComponentActivity() {
                             center = Offset(startX, endY)
                         )
                         drawCircle(
-                            color = Color.White.copy(alpha = 0.6f),
+                            color = Color.White.copy(alpha = 0.7f),
                             radius = 63f,
                             center = Offset(startX, endY),
                             style = Stroke(width = 3f)
@@ -260,6 +260,36 @@ class ImagesActivity : ComponentActivity() {
                             style = Stroke(width = 3f)
                         )
 
+                        // 4b. Draw 4 regular arrowheads to trace the path (one less, thickened by 200%, size reduced by 10%)
+                        val numArrows = 4
+                        val arrowColor = Color.White.copy(alpha = 0.6f)
+                        val arrowWidth = 72f
+                        val arrowHeight = 54f
+                        
+                        for (i in 1..numArrows) {
+                            val t = i.toFloat() / (numArrows + 1)
+                            val arrowY = startY + (endY - startY) * t
+                            
+                            val path = androidx.compose.ui.graphics.Path().apply {
+                                moveTo(startX, arrowY)
+                                if (isSwipeUp) {
+                                    lineTo(startX - arrowWidth, arrowY + arrowHeight)
+                                    moveTo(startX, arrowY)
+                                    lineTo(startX + arrowWidth, arrowY + arrowHeight)
+                                } else {
+                                    lineTo(startX - arrowWidth, arrowY - arrowHeight)
+                                    moveTo(startX, arrowY)
+                                    lineTo(startX + arrowWidth, arrowY - arrowHeight)
+                                }
+                            }
+                            
+                            drawPath(
+                                path = path,
+                                color = arrowColor,
+                                style = Stroke(width = 30f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                            )
+                        }
+
                         // 5. Draw the sliding indicator circle (Cercle bleu)
                         val currentY = if (isGestureActive) {
                             if (isSwipeUp) {
@@ -274,13 +304,13 @@ class ImagesActivity : ComponentActivity() {
                         // Red indicator circle matching start size increased by 100% (solid inner: 84f, outer glow: 165f)
                         // Outer glowing overlay
                         drawCircle(
-                            color = Color.White.copy(alpha = 0.4f),
-                            radius = 165f,
+                            color = Color.White.copy(alpha = 0.7f),
+                            radius = 130f,
                             center = Offset(startX, currentY)
                         )
                         // Inner solid red circle
                         drawCircle(
-                            color = Color.Red.copy(alpha = 0.9f),
+                            color = Color.Red.copy(alpha = 0.5f),
                             radius = 84f,
                             center = Offset(startX, currentY)
                         )
