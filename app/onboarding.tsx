@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { StyleSheet, View, Image, Dimensions, ScrollView, TouchableOpacity } from 'react-native'
-import { Text, Button, Card, IconButton } from 'react-native-paper'
+import { Text, Button, Card, IconButton, useTheme } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -11,27 +11,40 @@ import { api } from '@/services/api'
 import { illustrationsList, valenceList, arousalList } from '@/constants/images'
 
 export default function OnboardingScreen() {
+  const theme = useTheme()
   const router = useRouter()
   const { accessToken } = useSession()
   const [step, setStep] = useState(0)
 
-  // Step 1: Choix des images States - Pre-select exactly 20 images by default
-  const [selectedImages, setSelectedImages] = useState<string[]>(
-    illustrationsList.slice(0, 20).map(item => item.id)
-  )
+  // Separate AP (ID >= 17) and POS (ID <= 16) images
+  const apImages = illustrationsList.filter(item => Number(item.id) >= 17)
+  const posImages = illustrationsList.filter(item => Number(item.id) <= 16)
 
-  // Step 2: Évaluation des images States
+  const targetAPCount = Math.min(apImages.length, 20)
+  const targetPOSCount = Math.min(posImages.length, 20)
+
+  // Step 1 & 2: Choice of AP and POS images States - Pre-select exactly target count by default
+  const [selectedImages, setSelectedImages] = useState<string[]>(() => {
+    const apIds = apImages.slice(0, targetAPCount).map(item => item.id)
+    const posIds = posImages.slice(0, targetPOSCount).map(item => item.id)
+    return [...apIds, ...posIds]
+  })
+
+  const selectedAPImages = selectedImages.filter(id => Number(id) >= 17)
+  const selectedPOSImages = selectedImages.filter(id => Number(id) <= 16)
+
+  // Step 3: Évaluation des images States
   const [evaluationIndex, setEvaluationIndex] = useState(0)
   const [ratings, setRatings] = useState<Record<string, { valence: number | null, arousal: number | null }>>({})
 
-  // Step 3: Time Config States
+  // Step 4: Time Config States
   const [timeType, setTimeType] = useState<'week' | 'weekend'>('week')
   const [weekHour, setWeekHour] = useState(18)
   const [weekMinute, setWeekMinute] = useState(0)
   const [weekendHour, setWeekendHour] = useState(10)
   const [weekendMinute, setWeekendMinute] = useState(0)
 
-  const totalSteps = 4
+  const totalSteps = 5
   const screenWidth = Dimensions.get('window').width
   const isLastStep = step === totalSteps - 1
 
@@ -107,18 +120,21 @@ export default function OnboardingScreen() {
     if (step > 0) {
       setStep((prev) => prev - 1)
       // Reset evaluation index when going back to make sure it doesn't overflow if images count changed
-      if (step === 2) {
+      if (step === 3) {
         setEvaluationIndex(0)
       }
     }
   }
 
   const toggleImage = (id: string) => {
+    const isAp = Number(id) >= 17
     setSelectedImages((prev) => {
       if (prev.includes(id)) {
         return prev.filter(i => i !== id)
       } else {
-        if (prev.length >= 20) return prev // Hard limit: maximum 20 images
+        const selectedCount = prev.filter(item => isAp ? Number(item) >= 17 : Number(item) <= 16).length
+        const maxLimit = isAp ? targetAPCount : targetPOSCount
+        if (selectedCount >= maxLimit) return prev
         return [...prev, id]
       }
     })
@@ -136,7 +152,7 @@ export default function OnboardingScreen() {
     }))
   }
 
-  // Verification if all 20 selected images are fully rated
+  // Verification if all selected images are fully rated
   const isAllImagesEvaluated = () => {
     return selectedImages.every(id => {
       const r = ratings[id]
@@ -145,10 +161,13 @@ export default function OnboardingScreen() {
   }
 
   const isNextDisabled = () => {
-    if (step === 1 && selectedImages.length !== 20) {
+    if (step === 1 && selectedAPImages.length !== targetAPCount) {
       return true
     }
-    if (step === 2 && !isAllImagesEvaluated()) {
+    if (step === 2 && selectedPOSImages.length !== targetPOSCount) {
+      return true
+    }
+    if (step === 3 && !isAllImagesEvaluated()) {
       return true
     }
     return false
@@ -182,8 +201,8 @@ export default function OnboardingScreen() {
                        (currentRating.arousal !== null && currentRating.arousal < 4)
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.outlineVariant }]}>
         <View style={styles.headerCenter}>
           <Text variant="labelLarge" style={styles.stepIndicatorText}>
             {`Étape ${step + 1} sur ${totalSteps}`}
@@ -210,17 +229,17 @@ export default function OnboardingScreen() {
                 style={styles.logo}
                 source={require("@/assets/images/activmotiv.png")}
               />
-              <Text variant="headlineSmall" style={styles.stepTitle}>Bienvenue sur ActivMotiv</Text>
+              <Text variant="headlineSmall" style={[styles.stepTitle, { color: theme.colors.primary }]}>Bienvenue sur ActivMotiv</Text>
               
               <Card style={styles.textCard}>
                 <Card.Content>
-                  <Text style={styles.introductionText}>
+                  <Text style={[styles.introductionText, { color: theme.colors.onSurfaceVariant }]}>
                     {"ActivMotiv est un outil d'accompagnement quotidien conçu pour vous soutenir dans votre pratique d'activité physique."}
                   </Text>
-                  <Text style={styles.introductionText}>
+                  <Text style={[styles.introductionText, { color: theme.colors.onSurfaceVariant }]}>
                     {"Grâce à cette application, vous pourrez composer une galerie d'images de motivation personnalisée, évaluer vos ressentis émotionnels au fil des jours, et remplir des questionnaires d'auto-suivi scientifique."}
                   </Text>
-                  <Text style={styles.introductionText}>
+                  <Text style={[styles.introductionText, { color: theme.colors.onSurfaceVariant }]}>
                     {"Ce parcours de présentation en quelques étapes rapides vous permettra de configurer l'application selon vos préférences pour débuter sereinement votre suivi."}
                   </Text>
                 </Card.Content>
@@ -230,31 +249,31 @@ export default function OnboardingScreen() {
 
           {step === 1 && (
             <View style={styles.stepContainer}>
-              <Text variant="headlineSmall" style={styles.stepTitle}>{"Sélectionnez vos Images"}</Text>
+              <Text variant="headlineSmall" style={[styles.stepTitle, { color: theme.colors.primary }]}>{"Sélectionnez vos Images d'Activité Physique (AP)"}</Text>
               
-              <Text style={styles.descriptionText}>
+              <Text style={[styles.descriptionText, { color: theme.colors.onSurfaceVariant }]}>
                 {"Pour personnaliser votre galerie de motivation, vous devez sélectionner "}
-                <Text style={{ fontWeight: 'bold', color: 'rgb(0, 99, 153)' }}>{"exactement 20 images"}</Text>
-                {" parmi la liste ci-dessous (ni plus, ni moins). Appuyez sur les images pour les sélectionner ou les désélectionner :"}
+                <Text style={{ fontWeight: 'bold', color: theme.colors.primary }}>{`exactement ${targetAPCount} images`}</Text>
+                {" représentant une activité physique ou sportive parmi la liste ci-dessous :"}
               </Text>
 
               <View style={[
                 styles.counterBadge,
-                selectedImages.length === 20 ? styles.counterBadgeSuccess : styles.counterBadgeWarning
+                selectedAPImages.length === targetAPCount ? styles.counterBadgeSuccess : styles.counterBadgeWarning
               ]}>
                 <Text style={[
                   styles.counterText,
-                  selectedImages.length === 20 ? styles.counterTextSuccess : styles.counterTextWarning
+                  selectedAPImages.length === targetAPCount ? styles.counterTextSuccess : styles.counterTextWarning
                 ]}>
-                  {selectedImages.length === 20 
-                    ? "✓ Galerie prête : 20 images sélectionnées" 
-                    : `Sélectionnez 20 images (${selectedImages.length} / 20)`
+                  {selectedAPImages.length === targetAPCount 
+                    ? `✓ Sélection AP prête : ${targetAPCount} images sélectionnées` 
+                    : `Sélectionnez vos images AP (${selectedAPImages.length} / ${targetAPCount})`
                   }
                 </Text>
               </View>
 
               <View style={styles.gridContainer}>
-                {illustrationsList.map((item) => {
+                {apImages.map((item) => {
                   const isSelected = selectedImages.includes(item.id)
                   return (
                     <TouchableOpacity
@@ -262,7 +281,7 @@ export default function OnboardingScreen() {
                       onPress={() => toggleImage(item.id)}
                       style={[
                         styles.gridImageItem,
-                        { width: gridImageSize, height: gridImageSize, margin: gridMargin }
+                        { width: gridImageSize, height: gridImageSize, margin: gridMargin, backgroundColor: theme.colors.surfaceVariant }
                       ]}
                     >
                       <Image
@@ -273,10 +292,10 @@ export default function OnboardingScreen() {
                         ]}
                       />
                       {isSelected && (
-                        <View style={styles.gridImageCheckWrapper}>
+                        <View style={[styles.gridImageCheckWrapper, { backgroundColor: theme.colors.surface }]}>
                           <IconButton
                             icon="check-circle"
-                            iconColor="rgb(0, 99, 153)"
+                            iconColor={theme.colors.primary}
                             size={24}
                             style={styles.gridCheckIcon}
                           />
@@ -291,30 +310,91 @@ export default function OnboardingScreen() {
 
           {step === 2 && (
             <View style={styles.stepContainer}>
-              <Text variant="headlineSmall" style={styles.stepTitle}>{"Évaluez vos Images"}</Text>
+              <Text variant="headlineSmall" style={[styles.stepTitle, { color: theme.colors.primary }]}>{"Sélectionnez vos Images Positives (POS)"}</Text>
               
-              <Text style={styles.descriptionText}>
+              <Text style={[styles.descriptionText, { color: theme.colors.onSurfaceVariant }]}>
+                {"Sélectionnez maintenant "}
+                <Text style={{ fontWeight: 'bold', color: theme.colors.primary }}>{`exactement ${targetPOSCount} images`}</Text>
+                {" positives ou agréables pour compléter votre galerie de motivation parmi la liste ci-dessous :"}
+              </Text>
+
+              <View style={[
+                styles.counterBadge,
+                selectedPOSImages.length === targetPOSCount ? styles.counterBadgeSuccess : styles.counterBadgeWarning
+              ]}>
+                <Text style={[
+                  styles.counterText,
+                  selectedPOSImages.length === targetPOSCount ? styles.counterTextSuccess : styles.counterTextWarning
+                ]}>
+                  {selectedPOSImages.length === targetPOSCount 
+                    ? `✓ Sélection POS prête : ${targetPOSCount} images sélectionnées` 
+                    : `Sélectionnez vos images POS (${selectedPOSImages.length} / ${targetPOSCount})`
+                  }
+                </Text>
+              </View>
+
+              <View style={styles.gridContainer}>
+                {posImages.map((item) => {
+                  const isSelected = selectedImages.includes(item.id)
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      onPress={() => toggleImage(item.id)}
+                      style={[
+                        styles.gridImageItem,
+                        { width: gridImageSize, height: gridImageSize, margin: gridMargin, backgroundColor: theme.colors.surfaceVariant }
+                      ]}
+                    >
+                      <Image
+                        source={item.source}
+                        style={[
+                          styles.gridImage,
+                          !isSelected && styles.gridImageDeselected
+                        ]}
+                      />
+                      {isSelected && (
+                        <View style={[styles.gridImageCheckWrapper, { backgroundColor: theme.colors.surface }]}>
+                          <IconButton
+                            icon="check-circle"
+                            iconColor={theme.colors.primary}
+                            size={24}
+                            style={styles.gridCheckIcon}
+                          />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  )
+                })}
+              </View>
+            </View>
+          )}
+
+          {step === 3 && (
+            <View style={styles.stepContainer}>
+              <Text variant="headlineSmall" style={[styles.stepTitle, { color: theme.colors.primary }]}>{"Évaluez vos Images"}</Text>
+              
+              <Text style={[styles.descriptionText, { color: theme.colors.onSurfaceVariant }]}>
                 {"Pour chaque image sélectionnée, veuillez indiquer à quel point elle vous stimule et à quel point elle vous est agréable en sélectionnant le personnage SAM correspondant :"}
               </Text>
 
               <View style={[
                 styles.counterBadge,
-                ratedCount === 20 ? styles.counterBadgeSuccess : styles.counterBadgeWarning
+                ratedCount === selectedImages.length ? styles.counterBadgeSuccess : styles.counterBadgeWarning
               ]}>
                 <Text style={[
                   styles.counterText,
-                  ratedCount === 20 ? styles.counterTextSuccess : styles.counterTextWarning
+                  ratedCount === selectedImages.length ? styles.counterTextSuccess : styles.counterTextWarning
                 ]}>
-                  {ratedCount === 20 
-                    ? "✓ Évaluation terminée : 20 / 20 images évaluées" 
-                    : `Évaluez toutes les images (${ratedCount} / 20 évaluées)`
+                  {ratedCount === selectedImages.length 
+                    ? `✓ Évaluation terminée : ${selectedImages.length} / ${selectedImages.length} images évaluées` 
+                    : `Évaluez toutes les images (${ratedCount} / ${selectedImages.length} évaluées)`
                   }
                 </Text>
               </View>
 
               <Card style={styles.evalCard}>
                 <Card.Content style={{ alignItems: 'center' }}>
-                  <Text variant="titleMedium" style={styles.evalProgressIndicator}>
+                  <Text variant="titleMedium" style={[styles.evalProgressIndicator, { color: theme.colors.primary }]}>
                     {`Image ${evaluationIndex + 1} sur ${selectedImages.length}`}
                   </Text>
 
@@ -326,7 +406,7 @@ export default function OnboardingScreen() {
                   </View>
 
                   {/* Valence (Emotion) Scale */}
-                  <Text variant="bodyMedium" style={[styles.samLabel, { marginTop: 14 }]}>
+                  <Text variant="bodyMedium" style={[styles.samLabel, { marginTop: 14, color: theme.colors.onSurface }]}>
                     {"Quand je regarde cette image, je me sens..."}
                   </Text>
                   <View style={styles.samRow}>
@@ -336,7 +416,7 @@ export default function OnboardingScreen() {
                         <TouchableOpacity
                           key={item.id}
                           onPress={() => handleRate('valence', Number(item.id))}
-                          style={[styles.samButton, isSelected && styles.samSelectedButton]}
+                          style={[styles.samButton, isSelected && { borderColor: theme.colors.primary, backgroundColor: theme.colors.primaryContainer }]}
                         >
                           <Image
                             source={item.source}
@@ -348,7 +428,7 @@ export default function OnboardingScreen() {
                   </View>
 
                   {/* Arousal (Activation) Scale */}
-                  <Text variant="bodyMedium" style={styles.samLabel}>
+                  <Text variant="bodyMedium" style={[styles.samLabel, { color: theme.colors.onSurface }]}>
                     {"Quand je regarde cette image, je la trouve..."}
                   </Text>
                   <View style={styles.samRow}>
@@ -358,7 +438,7 @@ export default function OnboardingScreen() {
                         <TouchableOpacity
                           key={item.id}
                           onPress={() => handleRate('arousal', Number(item.id))}
-                          style={[styles.samButton, isSelected && styles.samSelectedButton]}
+                          style={[styles.samButton, isSelected && { borderColor: theme.colors.primary, backgroundColor: theme.colors.primaryContainer }]}
                         >
                           <Image
                             source={item.source}
@@ -374,7 +454,7 @@ export default function OnboardingScreen() {
                     <Card style={styles.warningCard}>
                       <Card.Content>
                         <Text style={styles.warningText}>
-                          {"💡 Conseil de cohérence : Comme vous avez sélectionné cette image vous-même pour votre galerie de motivation, lui donner une note faible (< 4 sur 5) peut sembler contradictoire. Si cette image ne vous inspire pas de ressentis positifs, vous pouvez retourner à l'étape précédente pour la remplacer par une autre, ou modifier votre évaluation si votre doigt a glissé ! (Cette alerte n'est pas bloquante)."}
+                          {"💡 Conseil de cohérence : Comme vous avez sélectionné cette image vous-même pour votre galerie de motivation, lui donner une note faible (< 4 sur 5) peut sembler contradictoire. Si cette image ne vous inspire pas de ressentis positifs, vous pouvez retourner aux étapes précédentes pour la remplacer par une autre, ou modifier votre évaluation si votre doigt a glissé ! (Cette alerte n'est pas bloquante)."}
                         </Text>
                       </Card.Content>
                     </Card>
@@ -386,14 +466,14 @@ export default function OnboardingScreen() {
                       icon="chevron-left"
                       size={36}
                       disabled={evaluationIndex <= 0}
-                      iconColor="rgb(0, 99, 153)"
+                      iconColor={theme.colors.primary}
                       onPress={() => setEvaluationIndex((prev) => prev - 1)}
                     />
                     <IconButton
                       icon="chevron-right"
                       size={36}
                       disabled={evaluationIndex >= selectedImages.length - 1 || currentRating.valence === null || currentRating.arousal === null}
-                      iconColor="rgb(0, 99, 153)"
+                      iconColor={theme.colors.primary}
                       onPress={() => setEvaluationIndex((prev) => prev + 1)}
                     />
                   </View>
@@ -402,14 +482,14 @@ export default function OnboardingScreen() {
             </View>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <View style={styles.stepContainer}>
-              <Text variant="headlineSmall" style={styles.stepTitle}>Planifier vos Rappels</Text>
+              <Text variant="headlineSmall" style={[styles.stepTitle, { color: theme.colors.primary }]}>Planifier vos Rappels</Text>
               
-              <Text style={styles.descriptionText}>
+              <Text style={[styles.descriptionText, { color: theme.colors.onSurfaceVariant }]}>
                 {"Pour garantir la régularité de votre accompagnement, l'application vous enverra de courts questionnaires périodiques (F-SUS et Générique)."}
               </Text>
-              <Text style={styles.descriptionText}>
+              <Text style={[styles.descriptionText, { color: theme.colors.onSurfaceVariant }]}>
                 {"Sélectionnez l'heure de rappel de vos questionnaires pour la semaine et pour le week-end :"}
               </Text>
 
@@ -434,16 +514,16 @@ export default function OnboardingScreen() {
 
               <Card style={styles.timeCard}>
                 <Card.Content style={{ alignItems: 'center' }}>
-                  <Text variant="titleMedium" style={styles.timeSectionTitle}>
+                  <Text variant="titleMedium" style={[styles.timeSectionTitle, { color: theme.colors.primary }]}>
                     {timeType === 'week' ? "Horaires de Semaine" : "Horaires de Week-end"}
                   </Text>
 
                   <View style={styles.timePickerContainer}>
-                    <View style={styles.timeColumn}>
+                    <View style={[styles.timeColumn, { backgroundColor: theme.colors.surfaceVariant }]}>
                       <IconButton
                         icon="chevron-up"
                         size={32}
-                        iconColor="rgb(0, 99, 153)"
+                        iconColor={theme.colors.primary}
                         onPress={() => {
                           if (timeType === 'week') {
                             setWeekHour((prev) => (prev + 1) % 24)
@@ -452,13 +532,13 @@ export default function OnboardingScreen() {
                           }
                         }}
                       />
-                      <Text style={styles.timeText}>
+                      <Text style={[styles.timeText, { color: theme.colors.onSurface }]}>
                         {timeType === 'week' ? String(weekHour).padStart(2, '0') : String(weekendHour).padStart(2, '0')}
                       </Text>
                       <IconButton
                         icon="chevron-down"
                         size={32}
-                        iconColor="rgb(0, 99, 153)"
+                        iconColor={theme.colors.primary}
                         onPress={() => {
                           if (timeType === 'week') {
                             setWeekHour((prev) => (prev - 1 + 24) % 24)
@@ -469,13 +549,13 @@ export default function OnboardingScreen() {
                       />
                     </View>
                     
-                    <Text style={styles.timeDivider}>:</Text>
+                    <Text style={[styles.timeDivider, { color: theme.colors.primary }]}>:</Text>
                     
-                    <View style={styles.timeColumn}>
+                    <View style={[styles.timeColumn, { backgroundColor: theme.colors.surfaceVariant }]}>
                       <IconButton
                         icon="chevron-up"
                         size={32}
-                        iconColor="rgb(0, 99, 153)"
+                        iconColor={theme.colors.primary}
                         onPress={() => {
                           if (timeType === 'week') {
                             setWeekMinute((prev) => (prev + 5) % 60)
@@ -484,13 +564,13 @@ export default function OnboardingScreen() {
                           }
                         }}
                       />
-                      <Text style={styles.timeText}>
+                      <Text style={[styles.timeText, { color: theme.colors.onSurface }]}>
                         {timeType === 'week' ? String(weekMinute).padStart(2, '0') : String(weekendMinute).padStart(2, '0')}
                       </Text>
                       <IconButton
                         icon="chevron-down"
                         size={32}
-                        iconColor="rgb(0, 99, 153)"
+                        iconColor={theme.colors.primary}
                         onPress={() => {
                           if (timeType === 'week') {
                             setWeekMinute((prev) => (prev - 5 + 60) % 60)
@@ -546,16 +626,16 @@ export default function OnboardingScreen() {
                 </Card.Content>
               </Card>
 
-              <Card style={styles.summaryCard}>
+              <Card style={[styles.summaryCard, { backgroundColor: theme.colors.elevation.level1, borderLeftColor: theme.colors.primary }]}>
                 <Card.Content>
-                  <Text variant="titleSmall" style={styles.summaryTitle}>{"Résumé de vos préférences :"}</Text>
-                  <View style={styles.summaryRowItem}>
-                    <Text style={styles.summaryLabel}>{"En semaine (Lun-Ven) :"}</Text>
-                    <Text style={styles.summaryValue}>{`${String(weekHour).padStart(2, '0')}h${String(weekMinute).padStart(2, '0')}`}</Text>
+                  <Text variant="titleSmall" style={[styles.summaryTitle, { color: theme.colors.primary }]}>{"Résumé de vos préférences :"}</Text>
+                  <View style={[styles.summaryRowItem, { borderBottomColor: theme.colors.outlineVariant }]}>
+                    <Text style={[styles.summaryLabel, { color: theme.colors.onSurfaceVariant }]}>{"En semaine (Lun-Ven) :"}</Text>
+                    <Text style={[styles.summaryValue, { color: theme.colors.primary }]}>{`${String(weekHour).padStart(2, '0')}h${String(weekMinute).padStart(2, '0')}`}</Text>
                   </View>
-                  <View style={styles.summaryRowItem}>
-                    <Text style={styles.summaryLabel}>{"Le week-end (Sam-Dim) :"}</Text>
-                    <Text style={styles.summaryValue}>{`${String(weekendHour).padStart(2, '0')}h${String(weekendMinute).padStart(2, '0')}`}</Text>
+                  <View style={[styles.summaryRowItem, { borderBottomColor: theme.colors.outlineVariant }]}>
+                    <Text style={[styles.summaryLabel, { color: theme.colors.onSurfaceVariant }]}>{"Le week-end (Sam-Dim) :"}</Text>
+                    <Text style={[styles.summaryValue, { color: theme.colors.primary }]}>{`${String(weekendHour).padStart(2, '0')}h${String(weekendMinute).padStart(2, '0')}`}</Text>
                   </View>
                 </Card.Content>
               </Card>
@@ -564,7 +644,7 @@ export default function OnboardingScreen() {
         </ScrollView>
       </View>
 
-      <View style={styles.navigationFooter}>
+      <View style={[styles.navigationFooter, { backgroundColor: theme.colors.background, borderTopColor: theme.colors.outlineVariant }]}>
         <View style={styles.footerLeft}>
           {step > 0 && (
             <Button mode="outlined" onPress={handleBack} style={styles.navButton}>
@@ -590,15 +670,12 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgb(252, 252, 255)'
   },
   header: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 18,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgb(222, 227, 235)',
-    backgroundColor: 'rgb(252, 252, 255)'
   },
   headerCenter: {
     alignItems: 'center',
@@ -649,12 +726,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 20,
-    color: 'rgb(0, 29, 50)'
   },
   textCard: {
     width: '100%',
     elevation: 1,
-    backgroundColor: 'rgb(252, 252, 255)',
     borderRadius: 12
   },
   introductionText: {
@@ -662,14 +737,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     marginBottom: 16,
-    color: 'rgb(26, 28, 30)'
   },
   descriptionText: {
     textAlign: 'justify',
     fontSize: 15,
     lineHeight: 22,
     marginBottom: 12,
-    color: 'rgb(26, 28, 30)',
     width: '100%'
   },
   counterBadge: {
@@ -710,7 +783,6 @@ const styles = StyleSheet.create({
     position: 'relative',
     borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: 'rgb(239, 244, 250)'
   },
   gridImage: {
     width: '100%',
@@ -724,7 +796,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: -6,
     right: -6,
-    backgroundColor: 'white',
     borderRadius: 16
   },
   gridCheckIcon: {
@@ -734,13 +805,11 @@ const styles = StyleSheet.create({
   evalCard: {
     width: '100%',
     elevation: 2,
-    backgroundColor: 'rgb(252, 252, 255)',
     borderRadius: 12,
     paddingVertical: 12
   },
   evalProgressIndicator: {
     fontWeight: 'bold',
-    color: 'rgb(0, 99, 153)',
     marginBottom: 12
   },
   evalImageContainer: {
@@ -758,7 +827,6 @@ const styles = StyleSheet.create({
   },
   samLabel: {
     fontSize: 14,
-    color: 'rgb(26, 28, 30)',
     marginTop: 10,
     marginBottom: 6
   },
@@ -775,8 +843,6 @@ const styles = StyleSheet.create({
     padding: 2
   },
   samSelectedButton: {
-    borderColor: 'rgb(0, 99, 153)',
-    backgroundColor: 'rgb(205, 229, 255)'
   },
   warningCard: {
     marginHorizontal: 12,
@@ -814,13 +880,11 @@ const styles = StyleSheet.create({
   timeCard: {
     width: '100%',
     elevation: 2,
-    backgroundColor: 'rgb(252, 252, 255)',
     borderRadius: 12,
     padding: 10
   },
   timeSectionTitle: {
     fontWeight: 'bold',
-    color: 'rgb(0, 29, 50)',
     marginBottom: 5,
     textAlign: 'center'
   },
@@ -832,20 +896,17 @@ const styles = StyleSheet.create({
   },
   timeColumn: {
     alignItems: 'center',
-    backgroundColor: 'rgb(239, 244, 250)',
     borderRadius: 12,
     paddingHorizontal: 12
   },
   timeText: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: 'rgb(0, 29, 50)',
     lineHeight: 52
   },
   timeDivider: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: 'rgb(0, 99, 153)',
     marginHorizontal: 15,
     bottom: 2
   },
@@ -864,16 +925,13 @@ const styles = StyleSheet.create({
   summaryCard: {
     width: '100%',
     elevation: 2,
-    backgroundColor: 'rgb(252, 252, 255)',
     borderRadius: 12,
     marginTop: 12,
     padding: 10,
     borderLeftWidth: 4,
-    borderLeftColor: 'rgb(0, 99, 153)'
   },
   summaryTitle: {
     fontWeight: 'bold',
-    color: 'rgb(0, 29, 50)',
     marginBottom: 8
   },
   summaryRowItem: {
@@ -881,22 +939,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 4,
     borderBottomWidth: 0.5,
-    borderBottomColor: 'rgb(222, 227, 235)'
   },
   summaryLabel: {
     fontSize: 14,
-    color: 'rgb(66, 71, 78)'
   },
   summaryValue: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: 'rgb(0, 99, 153)'
   },
   navigationFooter: {
     height: 70,
-    backgroundColor: 'rgb(252, 252, 255)',
     borderTopWidth: 1,
-    borderTopColor: 'rgb(222, 227, 235)',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
