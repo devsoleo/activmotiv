@@ -19,7 +19,7 @@ export default function About() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <ScrollView>
-        <Appbar.Header>
+        <Appbar.Header statusBarHeight={0}>
           <Appbar.BackAction onPress={() => {router.back()}} />
           <Appbar.Content title="Informations étude" />
         </Appbar.Header>

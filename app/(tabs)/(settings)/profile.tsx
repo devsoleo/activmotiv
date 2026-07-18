@@ -33,7 +33,7 @@ export default function Profile() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <ScrollView keyboardShouldPersistTaps="always">
-        <Appbar.Header>
+        <Appbar.Header statusBarHeight={0}>
           <Appbar.BackAction onPress={() => {router.back()}} />
           <Appbar.Content title="Mon profil" />
         </Appbar.Header>

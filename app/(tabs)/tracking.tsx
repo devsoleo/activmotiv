@@ -1,10 +1,15 @@
-import { View, StyleSheet, AppState, AppStateStatus } from 'react-native'
-import { Text, useTheme } from 'react-native-paper'
+import { View, StyleSheet, ScrollView, AppState, AppStateStatus, Dimensions } from 'react-native'
+import { Text, Card, Button, useTheme } from 'react-native-paper'
 import { BarChart } from "react-native-gifted-charts"
 import { useCallback, useState } from 'react'
-import { useFocusEffect } from 'expo-router'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import * as Notifications from 'expo-notifications'
+import * as Device from 'expo-device'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { api } from '@/services/api'
 import { getTrackingItem, syncWithServer } from '@/services/cache/tracking'
+import Task from '@/components/Task'
 
 function formatDuration(totalMilliseconds: number | null | undefined): string {
   if (totalMilliseconds == null || isNaN(totalMilliseconds) || totalMilliseconds <= 0) return '0s'
@@ -37,15 +42,22 @@ function formatDuration(totalMilliseconds: number | null | undefined): string {
 
 export default function TrackingScreen() {
   const theme = useTheme()
+  const router = useRouter()
+  const { width: screenWidth } = Dimensions.get('window')
+  
+  // States pour le suivi
   const [barData, setBarData] = useState<any[]>([])
   const [openingAmount, setOpeningAmount] = useState<number>(0)
   const [exposureDuration, setExposureDuration] = useState<number>(0)
+  
+  // State pour les questionnaires
+  const [status, setStatus] = useState<Record<string, any>>({})
 
+  // Chargement des données de suivi
   const getTracking = async () => {
     const currentJsDay = new Date().getDay()
     const currentDayIndex = currentJsDay === 0 ? 6 : currentJsDay - 1
 
-    // 1. Load from local cache for instant offline-first rendering
     try {
       const cachedAmount = await getTrackingItem('amount')
       const cachedDuration = await getTrackingItem('duration')
@@ -63,7 +75,6 @@ export default function TrackingScreen() {
       console.error("Failed to load tracking from cache:", e)
     }
 
-    // 2. Fetch updates from server in the background and refresh state
     try {
       const data = await syncWithServer()
       if (data) {
@@ -81,20 +92,43 @@ export default function TrackingScreen() {
     }
   }
 
+  // Chargement des questionnaires et télémétrie
+  const getQuestionnairesAndTelemetry = async () => {
+    api.get('/tasks/status')
+      .then((response) => response.data)
+      .then((data) => {
+        setStatus(data.status)
+      })
+      .catch((error) => {
+        console.error(error)
+      })
+
+    Notifications.getDevicePushTokenAsync().then(e => {
+      api.put('/notifications/token', { fcmToken: e.data })
+    })
+
+    const registerDevice = async () => {
+      const androidId = await AsyncStorage.getItem('androidId')
+      if (!androidId) console.log('androidId manquant')
+      await api.put('/telemetry/device', { androidId, device: Device })
+    }
+
+    registerDevice()
+  }
+
   useFocusEffect(
     useCallback(() => {
       getTracking()
+      getQuestionnairesAndTelemetry()
 
-      // Add AppState listener to refresh data in real-time when coming back from a popup
       const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
         if (nextAppState === 'active') {
-          // 1. Refresh immediately to check for instant local cache updates or start immediate sync
           getTracking()
+          getQuestionnairesAndTelemetry()
           
-          // 2. Refresh again after 800ms to resolve potential server race condition
-          // (allowing the background PUT request from the native side to finish processing on the server)
           const timer = setTimeout(() => {
             getTracking()
+            getQuestionnairesAndTelemetry()
           }, 800)
 
           return () => clearTimeout(timer)
@@ -111,79 +145,131 @@ export default function TrackingScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <Text variant="headlineLarge" style={[styles.title, { color: theme.colors.onBackground }]}>Suivi</Text>
 
-      <View style={styles.statsContainer}>
-        <View style={[styles.stat, { backgroundColor: theme.colors.primaryContainer }]}>
-          <Text variant='titleMedium' style={{ color: theme.colors.onPrimaryContainer }}>Nombre d'expositions</Text>
-          <Text variant='titleMedium' style={[styles.stat_value, { color: theme.colors.onPrimaryContainer }]}>{ openingAmount }</Text>
-        </View>
-        <View style={[styles.stat, { backgroundColor: theme.colors.primaryContainer }]}>
-          <Text variant='titleMedium' style={{ color: theme.colors.onPrimaryContainer }}>Temps d'exposition</Text>
-          <Text variant='titleMedium' style={[styles.stat_value, { color: theme.colors.onPrimaryContainer }]}>{ formatDuration(exposureDuration) }</Text>
-        </View>
-      </View>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
 
-      <View style={{ marginHorizontal: 12, zIndex: 10, overflow: 'visible' }}>
-        {(() => {
-          const chartProps: any = {
-            disablePress: false,
-            barWidth: 25,
-            barBorderRadius: 4,
-            data: barData,
-            yAxisThickness: 0,
-            xAxisThickness: 0,
-            stepValue: 10,
-            xAxisLabelTextStyle: { color: theme.colors.onSurface, fontSize: 11 },
-            yAxisTextStyle: { color: theme.colors.onSurface },
-            xAxisColor: theme.colors.outlineVariant,
-            yAxisColor: theme.colors.outlineVariant,
-            renderTooltip: (item: any) => (
-              <View style={{
-                backgroundColor: theme.colors.primary,
-                paddingHorizontal: 8,
-                paddingVertical: 5,
-                borderRadius: 6,
-                alignItems: 'center',
-                justifyContent: 'center',
-                elevation: 4,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.2,
-                shadowRadius: 2,
-              }}>
-                <Text style={{ color: theme.colors.onPrimary, fontWeight: 'bold', fontSize: 11 }}>
-                  {item.value} {item.value > 1 ? 'ouvertures' : 'ouverture'}
-                </Text>
-              </View>
-            ),
-            leftShiftForTooltip: 10,
-            topShiftForTooltip: -15
-          }
-          return <BarChart {...(chartProps as any)} />
-        })()}
-      </View>
+        {/* Section 1 : Questionnaires */}
+        <Text variant="titleLarge" style={[styles.sectionHeader, { color: theme.colors.primary }]}>Vos questionnaires à compléter</Text>
 
-      <Text variant='titleMedium' style={[{marginTop: 20, textAlign: 'center', color: theme.colors.onSurfaceVariant}]}>Nombres d'expositions journalières</Text>
+        <Task item={{ id: "1", uid: "t1", title: "Questionnaire quotidien", content: "Vous avez un questionnaire à remplir !", action: { path: "/(questionnaires)/", text: "Remplir" }}} disabled={false} />
+
+        {/* Section 2 : Statistiques d'utilisation */}
+        <Text variant="titleLarge" style={[styles.sectionHeader, { color: theme.colors.primary, marginTop: 24 }]}>
+          Statistiques d'utilisation
+        </Text>
+
+        <View style={styles.statsContainer}>
+          <View style={[styles.stat, { backgroundColor: theme.colors.primaryContainer }]}>
+            <Text variant='bodyMedium' style={{ color: theme.colors.onPrimaryContainer, fontWeight: '500' }}>Expositions</Text>
+            <Text variant='titleLarge' style={[styles.stat_value, { color: theme.colors.onPrimaryContainer }]}>{openingAmount}</Text>
+          </View>
+          <View style={[styles.stat, { backgroundColor: theme.colors.primaryContainer }]}>
+            <Text variant='bodyMedium' style={{ color: theme.colors.onPrimaryContainer, fontWeight: '500' }}>Temps d'exposition</Text>
+            <Text variant='titleLarge' style={[styles.stat_value, { color: theme.colors.onPrimaryContainer }]}>
+              {formatDuration(exposureDuration)}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.chartWrapper}>
+          {(() => {
+            const chartWidth = screenWidth - 100
+            const calculatedSpacing = Math.max(15, (chartWidth - (7 * 22) - 40) / 6)
+            const maxVal = Math.max(...barData.map((item: any) => Number(item?.value) || 0), 0)
+            const roundedMax = Math.ceil(maxVal / 10) * 10
+            const maxValue = Math.max(10, roundedMax)
+            const stepValue = maxValue / 10
+
+            const chartProps: any = {
+              disablePress: false,
+              width: chartWidth,
+              spacing: calculatedSpacing,
+              initialSpacing: 25,
+              barWidth: 22,
+              barBorderRadius: 4,
+              data: barData,
+              maxValue: maxValue,
+              noOfSections: 10,
+              stepValue: stepValue,
+              yAxisThickness: 0,
+              xAxisThickness: 0,
+              xAxisLabelTextStyle: { color: theme.colors.onSurface, fontSize: 11 },
+              yAxisTextStyle: { color: theme.colors.onSurface },
+              xAxisColor: theme.colors.outlineVariant,
+              yAxisColor: theme.colors.outlineVariant,
+              renderTooltip: (item: any) => (
+                <View style={[styles.tooltip, { backgroundColor: theme.colors.primary }]}>
+                  <Text style={{ color: theme.colors.onPrimary, fontWeight: 'bold', fontSize: 11 }}>
+                    {item.value} {item.value > 1 ? 'ouvertures' : 'ouverture'}
+                  </Text>
+                </View>
+              ),
+              leftShiftForTooltip: 10,
+              topShiftForTooltip: -15
+            }
+            return <BarChart {...(chartProps as any)} />
+          })()}
+        </View>
+
+        <Text variant='bodySmall' style={[styles.chartLegend, { color: theme.colors.onSurfaceVariant }]}>
+          Nombre d'expositions journalières
+        </Text>
+
+      </ScrollView>
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   title: { textAlign: 'center', paddingVertical: 12, fontWeight: "bold" },
-  statsContainer: {
-    flexDirection: 'row', // côte à côte
-    justifyContent: 'space-evenly', 
-    paddingHorizontal: 10,
-    marginBottom: 50
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 32
   },
-  stat: { 
-    backgroundColor: 'rgb(205, 229, 255)',
-    borderRadius: 18,
-    padding: 16,
+  sectionHeader: {
+    fontWeight: 'bold',
+    marginBottom: 12,
+    fontSize: 18
+  },
+  card: {
+    marginBottom: 10,
+    borderRadius: 8
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20
+  },
+  stat: {
+    borderRadius: 12,
+    padding: 14,
     flex: 1,
-    marginHorizontal: 5,
+    marginHorizontal: 4
   },
   stat_value: {
-    marginTop: 6,
-    fontSize: 20
+    marginTop: 4,
+    fontWeight: 'bold'
+  },
+  chartWrapper: {
+    marginVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'visible'
+  },
+  chartLegend: {
+    textAlign: 'center',
+    marginTop: 8,
+    fontWeight: '500'
+  },
+  tooltip: {
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2
   }
 })

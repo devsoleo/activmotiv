@@ -40,7 +40,7 @@ export default function SettingsScreen() {
       <Divider />
       <List.Item
         onPress={() => router.push("./(settings)/licenses")}
-        title={<Text variant="titleMedium" style={styles.menu}>Licences Open-source</Text>}
+        title={<Text variant="titleMedium" style={styles.menu}>Licences Open-Source</Text>}
         left={props => <List.Icon {...props} icon="license" />}
       />
       <Divider />

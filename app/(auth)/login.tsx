@@ -58,7 +58,7 @@ export default function LoginPage() {
           alignSelf: 'center',
           marginBottom: 45,
         }}
-        source={require("@/assets/images/activmotiv.png")}
+        source={theme.dark ? require("@/assets/images/activmotiv-dark.png") : require("@/assets/images/activmotiv.png")}
       />
       <Text variant="headlineLarge" style={{ textAlign: 'center', marginBottom: 45 }}>Se connecter</Text>
       <TextInput

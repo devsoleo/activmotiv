@@ -3,19 +3,16 @@ import { BottomNavigation, Icon } from 'react-native-paper'
 
 import SettingsScreen from "./settings"
 import TrackingScreen from "./tracking"
-import HomeScreen from './home'
 
 export default function Home() {
   const [index, setIndex] = useState(0)
 
   const [routes] = useState([
-    { key: 'home', title: 'Questionnaires', icon: 'clipboard-text-outline' },
-    { key: 'tracking', title: 'Suivi', icon: 'map-marker-outline' },
+    { key: 'tracking', title: 'Suivi', icon: 'clipboard-text-outline' },
     { key: 'settings', title: 'Paramètres', icon: 'cog-outline' },
   ])
 
-  const [scenes] = useState({
-    home: <HomeScreen />,
+  const [scenes] = useState<Record<string, React.ReactNode>>({
     tracking: <TrackingScreen />,
     settings: <SettingsScreen />
   })

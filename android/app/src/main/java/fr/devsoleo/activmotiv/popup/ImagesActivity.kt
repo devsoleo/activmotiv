@@ -347,20 +347,39 @@ class ImagesActivity : ComponentActivity() {
     }
 
     private fun getRandomIllustrations(): Pair<SelectedImage, SelectedImage> {
-
-        val sportIllustrations = listOf(
-            R.drawable.ap1, R.drawable.ap2, R.drawable.ap3, R.drawable.ap4,
-            R.drawable.ap5, R.drawable.ap6, R.drawable.ap7, R.drawable.ap8,
-            R.drawable.ap9, R.drawable.ap10, R.drawable.ap11, R.drawable.ap12,
-            R.drawable.ap13, R.drawable.ap14, R.drawable.ap15
+        val sportPrefixes = listOf(
+            Pair("apex", 33),
+            Pair("aplt", 28),
+            Pair("apta", 25)
         )
 
-        val positiveIllustrations = listOf(
-            R.drawable.pos1, R.drawable.pos2, R.drawable.pos3, R.drawable.pos4,
-            R.drawable.pos5, R.drawable.pos6, R.drawable.pos7, R.drawable.pos8,
-            R.drawable.pos9, R.drawable.pos10, R.drawable.pos11, R.drawable.pos12,
-            R.drawable.pos13, R.drawable.pos14, R.drawable.pos15, R.drawable.pos16
+        val positivePrefixes = listOf(
+            Pair("usac", 12),
+            Pair("usan", 13),
+            Pair("usna", 9),
+            Pair("uspl", 17),
+            Pair("usrs", 5)
         )
+
+        val sportIllustrations = mutableListOf<Int>()
+        for ((prefix, count) in sportPrefixes) {
+            for (i in 1..count) {
+                val resId = resources.getIdentifier("${prefix}_$i", "drawable", packageName)
+                if (resId != 0) {
+                    sportIllustrations.add(resId)
+                }
+            }
+        }
+
+        val positiveIllustrations = mutableListOf<Int>()
+        for ((prefix, count) in positivePrefixes) {
+            for (i in 1..count) {
+                val resId = resources.getIdentifier("${prefix}_$i", "drawable", packageName)
+                if (resId != 0) {
+                    positiveIllustrations.add(resId)
+                }
+            }
+        }
 
         val sportIndex = sportIllustrations.indices.random()
         val positiveIndex = positiveIllustrations.indices.random()
@@ -372,7 +391,7 @@ class ImagesActivity : ComponentActivity() {
             ),
             SelectedImage(
                 resId = positiveIllustrations[positiveIndex],
-                index = positiveIndex + 1
+                index = positiveIndex + 87
             )
         )
     }

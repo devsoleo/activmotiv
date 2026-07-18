@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router'
-import { Linking, StyleSheet } from 'react-native'
+import { View, Linking, StyleSheet } from 'react-native'
 import { Text, Appbar, List, useTheme } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -9,7 +9,7 @@ export default function Contacts() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <Appbar.Header>
+      <Appbar.Header statusBarHeight={0}>
         <Appbar.BackAction onPress={() => {router.back()}} />
         <Appbar.Content title="Contacts" />
       </Appbar.Header>
