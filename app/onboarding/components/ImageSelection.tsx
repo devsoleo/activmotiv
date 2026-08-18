@@ -6,6 +6,7 @@ import { Image } from 'expo-image'
 interface Category {
   data: { source: any; globalIndex: number }[]
   title: string
+  targetCount?: number
 }
 
 interface ImageSelectionProps {
@@ -63,11 +64,29 @@ export default function ImageSelection({
 
       {categories.map((cat) => {
         if (!cat.data || cat.data.length === 0) return null
+        const selectedInCat = cat.data.filter((item) => selectedImages.includes(item.globalIndex)).length
+        const isCatTargetMet = cat.targetCount !== undefined ? selectedInCat === cat.targetCount : false
+
         return (
           <View key={cat.title} style={{ marginTop: 16, width: '100%' }}>
-            <Text variant="titleMedium" style={{ fontWeight: 'bold', color: theme.colors.primary, marginBottom: 8 }}>
-              {cat.title}
-            </Text>
+            <View style={styles.categoryHeader}>
+              <Text variant="titleMedium" style={{ fontWeight: 'bold', color: theme.colors.primary }}>
+                {cat.title}
+              </Text>
+              {cat.targetCount !== undefined && (
+                <View style={[
+                  styles.categoryBadge,
+                  isCatTargetMet ? styles.counterBadgeSuccess : styles.counterBadgeWarning
+                ]}>
+                  <Text style={[
+                    styles.categoryBadgeText,
+                    isCatTargetMet ? styles.counterTextSuccess : styles.counterTextWarning
+                  ]}>
+                    {`${selectedInCat} / ${cat.targetCount}`}
+                  </Text>
+                </View>
+              )}
+            </View>
             <View style={styles.gridContainer}>
               {cat.data.map((item) => {
                 const isSelected = selectedImages.includes(item.globalIndex)
@@ -155,6 +174,23 @@ const styles = StyleSheet.create({
   },
   counterTextSuccess: {
     color: '#155724'
+  },
+  categoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+    width: '100%'
+  },
+  categoryBadge: {
+    borderRadius: 12,
+    paddingVertical: 2,
+    paddingHorizontal: 10,
+    borderWidth: 1
+  },
+  categoryBadgeText: {
+    fontWeight: 'bold',
+    fontSize: 12
   },
   gridContainer: {
     flexDirection: 'row',

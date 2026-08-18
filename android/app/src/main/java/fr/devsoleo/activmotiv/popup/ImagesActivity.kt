@@ -290,7 +290,7 @@ class ImagesActivity : ComponentActivity() {
                             )
                         }
 
-                        // 5. Draw the sliding indicator circle (Cercle bleu)
+                        // 5. Draw the sliding indicator circle
                         val currentY = if (isGestureActive) {
                             if (isSwipeUp) {
                                 draggedY.coerceIn(endY, startY)
@@ -301,16 +301,19 @@ class ImagesActivity : ComponentActivity() {
                             startY
                         }
 
-                        // Red indicator circle matching start size increased by 100% (solid inner: 84f, outer glow: 165f)
+                        val totalDistance = Math.abs(endY - startY)
+                        val remainingDistance = Math.abs(endY - currentY)
+                        val isAboutToValidate = isGestureActive && totalDistance > 0f && (remainingDistance <= 150f || (remainingDistance / totalDistance) <= 0.25f)
+
                         // Outer glowing overlay
                         drawCircle(
-                            color = Color.White.copy(alpha = 0.7f),
+                            color = if (isAboutToValidate) Color(0xFFAED581).copy(alpha = 0.7f) else Color.White.copy(alpha = 0.7f),
                             radius = 130f,
                             center = Offset(startX, currentY)
                         )
-                        // Inner solid red circle
+                        // Inner solid circle (Green when about to validate, Red otherwise)
                         drawCircle(
-                            color = Color.Red.copy(alpha = 0.5f),
+                            color = if (isAboutToValidate) Color(0xFF4CAF50).copy(alpha = 0.85f) else Color.Red.copy(alpha = 0.5f),
                             radius = 84f,
                             center = Offset(startX, currentY)
                         )

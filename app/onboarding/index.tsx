@@ -29,10 +29,17 @@ export default function OnboardingScreen() {
   }
 
   // Separate AP and POS images from individual arrays
-  const apImages = [...apExerciceImages, ...apLoisirsImages, ...apTransportsActifsImages]
+  const apExerciceCategories = attachIndices(apExerciceImages)
+  const apLoisirsCategories = attachIndices(apLoisirsImages)
+  const apTransportsActifsCategories = attachIndices(apTransportsActifsImages)
+
+  const apExerciceIndices = apExerciceCategories.map((item) => item.globalIndex)
+  const apLoisirsIndices = apLoisirsCategories.map((item) => item.globalIndex)
+  const apTransportsActifsIndices = apTransportsActifsCategories.map((item) => item.globalIndex)
+
   const posImages = [...usAccomplissementImages, ...usAnimauxImages, ...usNatureImages, ...usPlaisirImages, ...usRelationSocialeImages]
 
-  const targetAPCount = Math.min(apImages.length, 15)
+  const targetAPCount = 15
   const targetPOSCount = Math.min(posImages.length, 15)
 
   // Step 1 & 2: Choice of AP and POS images stored as global indices (numbers)
@@ -140,7 +147,16 @@ export default function OnboardingScreen() {
       if (prev.includes(globalIndex)) {
         return prev.filter(i => i !== globalIndex)
       } else {
-        if (prev.length >= targetAPCount) return prev
+        if (apExerciceIndices.includes(globalIndex)) {
+          const count = prev.filter(i => apExerciceIndices.includes(i)).length
+          if (count >= 5) return prev
+        } else if (apLoisirsIndices.includes(globalIndex)) {
+          const count = prev.filter(i => apLoisirsIndices.includes(i)).length
+          if (count >= 5) return prev
+        } else if (apTransportsActifsIndices.includes(globalIndex)) {
+          const count = prev.filter(i => apTransportsActifsIndices.includes(i)).length
+          if (count >= 5) return prev
+        }
         return [...prev, globalIndex]
       }
     })
@@ -177,8 +193,15 @@ export default function OnboardingScreen() {
     })
   }
 
+  const isAPComplete = () => {
+    const exerciceCount = selectedAPImages.filter(i => apExerciceIndices.includes(i)).length
+    const loisirsCount = selectedAPImages.filter(i => apLoisirsIndices.includes(i)).length
+    const transportsCount = selectedAPImages.filter(i => apTransportsActifsIndices.includes(i)).length
+    return exerciceCount === 5 && loisirsCount === 5 && transportsCount === 5
+  }
+
   const isNextDisabled = () => {
-    if (step === 1 && selectedAPImages.length !== targetAPCount) {
+    if (step === 1 && !isAPComplete()) {
       return true
     }
     if (step === 2 && selectedPOSImages.length !== targetPOSCount) {
@@ -243,14 +266,14 @@ export default function OnboardingScreen() {
               description={
                 <Text style={[styles.descriptionText, { color: theme.colors.onSurfaceVariant }]}>
                   {"Pour personnaliser votre galerie de motivation, vous devez sélectionner "}
-                  <Text style={{ fontWeight: 'bold', color: theme.colors.primary }}>{`exactement ${targetAPCount} images`}</Text>
-                  {" représentant une activité physique ou sportive parmi la liste ci-dessous :"}
+                  <Text style={{ fontWeight: 'bold', color: theme.colors.primary }}>{"exactement 5 images par catégorie"}</Text>
+                  {" (soit 15 images au total) parmi la liste ci-dessous :"}
                 </Text>
               }
               categories={[
-                { data: attachIndices(apExerciceImages), title: "Exercice" },
-                { data: attachIndices(apLoisirsImages), title: "Loisirs" },
-                { data: attachIndices(apTransportsActifsImages), title: "Transports actifs" }
+                { data: apExerciceCategories, title: "Exercice", targetCount: 5 },
+                { data: apLoisirsCategories, title: "Loisirs", targetCount: 5 },
+                { data: apTransportsActifsCategories, title: "Transports actifs", targetCount: 5 }
               ]}
               selectedImages={selectedAPImages}
               toggleImage={toggleAPImage}

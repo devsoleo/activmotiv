@@ -9,18 +9,24 @@ export default function QuestionnaireScreen() {
   const router = useRouter()
 
   return (
-    <Questionnaire title="Questionnaire" infos={<>
-      <Text>
-        Lisez attentivement chaque phrase et répondez sur l'échelle située en dessous en sélectionnant un nombre correspondant le mieux à ce que vous pensez.
-      </Text>
-      <Text style={{ paddingTop: 12 }}>
-        (1 = pas du tout d'accord à 5 = tout à fait d'accord)
-      </Text>
-    </>} list={dailyList} onSubmit={async (headers, results) => {
-      await enqueueForm('questionnaires', 'daily', { headers, results, timestamp: Date.now() })
-
-      router.replace('/(tabs)')
-    }} />
+    <Questionnaire
+      title="Questionnaire"
+      infos={
+        <>
+          <Text>
+            Lisez attentivement chaque phrase et répondez sur l'échelle située en dessous en sélectionnant un nombre correspondant le mieux à ce que vous pensez.
+          </Text>
+          <Text style={{ paddingTop: 12 }}>
+            (1 = pas du tout d'accord à 5 = tout à fait d'accord)
+          </Text>
+        </>
+      }
+      list={dailyList}
+      onSubmit={async (results) => {
+        await enqueueForm('questionnaires', 'daily', { results, timestamp: Date.now() })
+        router.replace('/(tabs)')
+      }}
+    />
   )
 }
 

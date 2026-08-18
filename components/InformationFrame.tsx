@@ -1,7 +1,12 @@
-import { useState } from 'react'
+import { useState, ReactNode } from 'react'
 import { Portal, Modal, Text, Button, useTheme } from 'react-native-paper'
 
-export default function InformationFrame({ content, actionName = "" }) {
+interface InformationFrameProps {
+  content: ReactNode
+  actionName?: string
+}
+
+export default function InformationFrame({ content, actionName = "" }: InformationFrameProps) {
   const [visible, setVisible] = useState(true)
   const hideModal = () => setVisible(false)
   const theme = useTheme()

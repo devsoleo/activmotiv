@@ -1,35 +1,54 @@
-import { useState, useRef, createRef } from 'react'
+import { useState, useRef, createRef, ReactNode } from 'react'
 import { View, StyleSheet, ScrollView } from 'react-native'
 import { Text, Button, Card, RadioButton, useTheme } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import InformationFrame from './InformationFrame'
 
-export default function Questionnaire({ title, list, infos, onSubmit }) {
+export interface QuestionnaireItem {
+  uid: string
+  content: string
+  answers: Array<{
+    minimum: string
+    maximum: string
+    size: number
+  }>
+}
+
+export interface QuestionnaireProps {
+  title: string
+  list: QuestionnaireItem[]
+  infos: ReactNode
+  onSubmit: (results: Array<{ question: string; answer: any }>) => void
+}
+
+export default function Questionnaire({ title, list, infos, onSubmit }: QuestionnaireProps) {
   const theme = useTheme()
   const [hasSubmit, setHasSubmit] = useState(false)
 
-  const listHeaders = list.map(item => item.uid)
   const size = list.length
 
-  const [answers, setAnswers] =  useState(new Array(list.length).fill(null))
+  const [answers, setAnswers] = useState<any[]>(new Array(list.length).fill(null))
 
-  const handleAnswerChange = (i, v) => {
+  const handleAnswerChange = (i: number, v: any) => {
     const u = [...answers]
     u[i] = v
     setAnswers(u)
   }
 
-  const scrollViewRef = useRef(null)
-  const sectionRefs = useRef(list.map(() => createRef()))
+  const scrollViewRef = useRef<ScrollView | null>(null)
+  const sectionRefs = useRef<React.RefObject<any>[]>(list.map(() => createRef()))
 
-  const scrollToSection = (index) => {
+  const scrollToSection = (index: number) => {
     const ref = sectionRefs.current[index]
-    ref.current?.measureLayout(
-      scrollViewRef.current,
-      (x, y) => {
-        scrollViewRef.current.scrollTo({ y: y, animated: true })
-      }
-    )
+    if (ref && ref.current && scrollViewRef.current) {
+      ref.current.measureLayout(
+        scrollViewRef.current,
+        (x: number, y: number) => {
+          scrollViewRef.current?.scrollTo({ y: y, animated: true })
+        },
+        () => {}
+      )
+    }
   }
 
   return (
@@ -48,7 +67,7 @@ export default function Questionnaire({ title, list, infos, onSubmit }) {
         <Button mode="outlined" onPress={() => {
           setHasSubmit(true)
 
-          function findFirstNullIndex(arr) {
+          function findFirstNullIndex(arr: any[]): number {
             for (let i = 0; i < arr.length; i++) {
               const el = arr[i];
 
@@ -68,19 +87,37 @@ export default function Questionnaire({ title, list, infos, onSubmit }) {
 
           const missingAnswer = findFirstNullIndex(answers)
 
-          if (missingAnswer != -1) return scrollToSection(missingAnswer)
+          if (missingAnswer !== -1) return scrollToSection(missingAnswer)
 
-          onSubmit(listHeaders, answers)
+          const formattedResults = list.map((item, index) => {
+            const cardAns = answers[index]
+            const val = (Array.isArray(cardAns) && cardAns.length === 1) ? cardAns[0] : cardAns
+            return {
+              question: item.content,
+              answer: val
+            }
+          })
+
+          onSubmit(formattedResults)
         }}>Valider mes réponses</Button>
       </View>
     </SafeAreaView>
   )
 }
 
-const QuestionCard = ({ question, globalIndex, globalSize, hasSubmit, sectionRefs, onUpdate }) => {
-  const [cardAnswers, setCardAnswers] =  useState(new Array(question.answers.length).fill(null))
+interface QuestionCardProps {
+  question: QuestionnaireItem
+  globalIndex: number
+  globalSize: number
+  hasSubmit: boolean
+  sectionRefs: React.MutableRefObject<React.RefObject<any>[]>
+  onUpdate: (value: any) => void
+}
 
-  const handleCardAnswerChange = (i, v) => {
+const QuestionCard = ({ question, globalIndex, globalSize, hasSubmit, sectionRefs, onUpdate }: QuestionCardProps) => {
+  const [cardAnswers, setCardAnswers] = useState<any[]>(new Array(question.answers.length).fill(null))
+
+  const handleCardAnswerChange = (i: number, v: number) => {
     const u = [...cardAnswers]
     u[i] = v
     setCardAnswers(u)
@@ -95,11 +132,11 @@ const QuestionCard = ({ question, globalIndex, globalSize, hasSubmit, sectionRef
 
         {question.answers.map((answer, answerIndex) => (
           <View key={question.uid + "_" + answerIndex} style={{ alignItems: 'center' }}>
-            <RadioButton.Group  onValueChange={value => {handleCardAnswerChange(answerIndex, Number(value))}} value={String(cardAnswers[answerIndex])}>
+            <RadioButton.Group onValueChange={value => {handleCardAnswerChange(answerIndex, Number(value))}} value={String(cardAnswers[answerIndex])}>
               <View style={styles.radioGroup}>
                 {[...new Array(answer.size)].map((_, radioIndex) => (
                   <View style={[styles.radioItem]} key={question.uid + "_" + answerIndex + "_" + radioIndex}>
-                    <Text style={styles.radioLabel}>{ (radioIndex == 0) ? answer.minimum : (radioIndex == answer.size - 1) ? answer.maximum : ""}</Text>
+                    <Text style={styles.radioLabel}>{ (radioIndex === 0) ? answer.minimum : (radioIndex === answer.size - 1) ? answer.maximum : ""}</Text>
                     <RadioButton value={String(radioIndex + 1)} />
                   </View>
                 ))}

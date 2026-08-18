@@ -58,18 +58,41 @@ export default function TrackingScreen() {
     const currentJsDay = new Date().getDay()
     const currentDayIndex = currentJsDay === 0 ? 6 : currentJsDay - 1
 
+    const getCurrentWeekMonday = () => {
+      const d = new Date()
+      const day = d.getDay()
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+      const monday = new Date(d.setDate(diff))
+      monday.setHours(0, 0, 0, 0)
+      return monday.toISOString().split('T')[0]
+    }
+
+    const sanitizeOpeningData = (openingList: any[]) => {
+      if (!Array.isArray(openingList)) return []
+      return openingList.map((item: any, index: number) => ({
+        ...item,
+        // Future days in the current week cannot have openings yet
+        value: index > currentDayIndex ? 0 : (item.value || 0),
+        frontColor: index === currentDayIndex ? theme.colors.primary : 'lightgray'
+      }))
+    }
+
     try {
+      const cachedWeek = await getTrackingItem('weekStart')
+      const currentWeek = getCurrentWeekMonday()
+
       const cachedAmount = await getTrackingItem('amount')
       const cachedDuration = await getTrackingItem('duration')
       const cachedOpening = await getTrackingItem('opening')
 
       if (cachedAmount !== undefined) setOpeningAmount(cachedAmount)
       if (cachedDuration !== undefined) setExposureDuration(cachedDuration)
-      if (cachedOpening) {
-        setBarData(cachedOpening.map((item: any, index: number) => ({
-          ...item,
-          frontColor: index === currentDayIndex ? theme.colors.primary : 'lightgray'
-        })))
+
+      if (cachedOpening && cachedWeek === currentWeek) {
+        setBarData(sanitizeOpeningData(cachedOpening))
+      } else {
+        const emptyLabels = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+        setBarData(sanitizeOpeningData(emptyLabels.map(label => ({ label, value: 0 }))))
       }
     } catch (e) {
       console.error("Failed to load tracking from cache:", e)
@@ -81,10 +104,7 @@ export default function TrackingScreen() {
         setOpeningAmount(data.amount)
         setExposureDuration(data.duration)
         if (data.opening) {
-          setBarData(data.opening.map((item: any, index: number) => ({
-            ...item,
-            frontColor: index === currentDayIndex ? theme.colors.primary : 'lightgray'
-          })))
+          setBarData(sanitizeOpeningData(data.opening))
         }
       }
     } catch (e) {
