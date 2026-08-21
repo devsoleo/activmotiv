@@ -19,6 +19,8 @@ class PresenceReceiver : BroadcastReceiver() {
 
                 // 1. Perform popup status check first (updates/caches status if false)
                 if (api.isAuthenticated() && api.shouldShowPopups()) {
+                    api.syncSamImages()
+
                     // 2. Probability check (50% probability rule = 0.5f)
                     if (Random.nextFloat() <= 0.5f) {
                         context.startActivity(startIntent)

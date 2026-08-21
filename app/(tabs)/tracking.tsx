@@ -9,6 +9,7 @@ import * as Device from 'expo-device'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { api } from '@/services/api'
 import { getTrackingItem, syncWithServer } from '@/services/cache/tracking'
+import { getCachedQuestionnaireStatus, syncQuestionnaireStatusWithServer } from '@/services/cache/questionnaires'
 import Task from '@/components/Task'
 
 function formatDuration(totalMilliseconds: number | null | undefined): string {
@@ -51,7 +52,7 @@ export default function TrackingScreen() {
   const [exposureDuration, setExposureDuration] = useState<number>(0)
   
   // State pour les questionnaires
-  const [status, setStatus] = useState<Record<string, any>>({})
+  const [displayQuestionnaire, setDisplayQuestionnaire] = useState<boolean>(false)
 
   // Chargement des données de suivi
   const getTracking = async () => {
@@ -114,14 +115,23 @@ export default function TrackingScreen() {
 
   // Chargement des questionnaires et télémétrie
   const getQuestionnairesAndTelemetry = async () => {
-    api.get('/tasks/status')
-      .then((response) => response.data)
-      .then((data) => {
-        setStatus(data.status)
-      })
-      .catch((error) => {
-        console.error(error)
-      })
+    try {
+      const cachedDisplay = await getCachedQuestionnaireStatus()
+      if (cachedDisplay !== undefined && cachedDisplay !== null) {
+        setDisplayQuestionnaire(cachedDisplay)
+      }
+    } catch (e) {
+      console.error("Failed to load questionnaire status from cache:", e)
+    }
+
+    try {
+      const data = await syncQuestionnaireStatusWithServer()
+      if (data && typeof data.display === 'boolean') {
+        setDisplayQuestionnaire(data.display)
+      }
+    } catch (error) {
+      console.error("Failed to sync questionnaire status with server:", error)
+    }
 
     Notifications.getDevicePushTokenAsync().then(e => {
       api.put('/notifications/token', { fcmToken: e.data })
@@ -170,7 +180,16 @@ export default function TrackingScreen() {
         {/* Section 1 : Questionnaires */}
         <Text variant="titleLarge" style={[styles.sectionHeader, { color: theme.colors.primary }]}>Vos questionnaires à compléter</Text>
 
-        <Task item={{ id: "1", uid: "t1", title: "Questionnaire quotidien", content: "Vous avez un questionnaire à remplir !", action: { path: "/(questionnaires)/", text: "Remplir" }}} disabled={false} />
+        <Task
+          item={{
+            id: "1",
+            uid: "t1",
+            title: "Questionnaire quotidien",
+            content: displayQuestionnaire ? "Vous avez un questionnaire à remplir !" : "Aucun questionnaire à remplir pour le moment.",
+            action: { path: "/(questionnaires)/", text: "Remplir" }
+          }}
+          disabled={!displayQuestionnaire}
+        />
 
         {/* Section 2 : Statistiques d'utilisation */}
         <Text variant="titleLarge" style={[styles.sectionHeader, { color: theme.colors.primary, marginTop: 24 }]}>

@@ -27,6 +27,7 @@ import fr.devsoleo.activmotiv.api.Api
 import kotlin.random.Random
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import androidx.lifecycle.lifecycleScope
 
 class ImagesActivity : ComponentActivity() {
     private var exposureTime : Long = 0
@@ -134,21 +135,34 @@ class ImagesActivity : ComponentActivity() {
             return
         }
 
-        val (sport, positive) = getRandomIllustrations()
-        
-        // Randomly place AP (sport) at top or bottom
-        val isApAtTop = Random.nextBoolean()
+        lifecycleScope.launch {
+            val api = Api(applicationContext)
 
-        val top = if (isApAtTop) sport else positive
-        val bottom = if (isApAtTop) positive else sport
+            // Sync SAM images status from server if authenticated
+            if (api.isAuthenticated()) {
+                try {
+                    api.syncSamImages()
+                } catch (e: Exception) {
+                    Log.e("ImagesActivity", "Error syncing SAM images: ${e.message}")
+                }
+            }
 
-        topImageIndex = top.index
-        bottomImageIndex = bottom.index
+            val hiddenMap = api.getHiddenImagesMap()
+            val (sport, positive) = getRandomIllustrations(hiddenMap)
 
-        // The swipe direction ALWAYS goes from AP (sport) to POS (positive)
-        val isSwipeUp = !isApAtTop
+            // Randomly place AP (sport) at top or bottom
+            val isApAtTop = Random.nextBoolean()
 
-        setContent {
+            val top = if (isApAtTop) sport else positive
+            val bottom = if (isApAtTop) positive else sport
+
+            topImageIndex = top.index
+            bottomImageIndex = bottom.index
+
+            // The swipe direction ALWAYS goes from AP (sport) to POS (positive)
+            val isSwipeUp = !isApAtTop
+
+            setContent {
             // Random horizontal position fraction (not too close to borders, between 0.25f and 0.75f)
             val startXFraction = remember { Random.nextFloat() * 0.5f + 0.25f }
             
@@ -329,6 +343,7 @@ class ImagesActivity : ComponentActivity() {
             }
         }
     }
+    }
 
     override fun onRestart() {
         super.onRestart()
@@ -349,7 +364,9 @@ class ImagesActivity : ComponentActivity() {
         skip = false
     }
 
-    private fun getRandomIllustrations(): Pair<SelectedImage, SelectedImage> {
+    private fun getRandomIllustrations(hiddenMap: Map<Int, Boolean>): Pair<SelectedImage, SelectedImage> {
+        val api = Api(this)
+
         val sportPrefixes = listOf(
             Pair("apex", 33),
             Pair("aplt", 28),
@@ -364,39 +381,78 @@ class ImagesActivity : ComponentActivity() {
             Pair("usrs", 5)
         )
 
-        val sportIllustrations = mutableListOf<Int>()
+        val sportIllustrations = mutableListOf<SelectedImage>()
+        var sportCount = 0
         for ((prefix, count) in sportPrefixes) {
             for (i in 1..count) {
-                val resId = resources.getIdentifier("${prefix}_$i", "drawable", packageName)
-                if (resId != 0) {
-                    sportIllustrations.add(resId)
+                sportCount++
+                val imageId = sportCount
+                val isHidden = hiddenMap[imageId] ?: false
+                if (!isHidden) {
+                    val resId = resources.getIdentifier("${prefix}_$i", "drawable", packageName)
+                    if (resId != 0) {
+                        sportIllustrations.add(SelectedImage(resId = resId, index = imageId))
+                    }
                 }
             }
         }
 
-        val positiveIllustrations = mutableListOf<Int>()
+        Log.d("ImagesActivity", "Sport illustrations count (hidden=false): ${sportIllustrations.size} / $sportCount")
+
+        // Fallback if all sport images are marked as hidden
+        if (sportIllustrations.isEmpty()) {
+            Log.w("ImagesActivity", "All sport images are hidden! Falling back to all sport images.")
+            sportCount = 0
+            for ((prefix, count) in sportPrefixes) {
+                for (i in 1..count) {
+                    sportCount++
+                    val imageId = sportCount
+                    val resId = resources.getIdentifier("${prefix}_$i", "drawable", packageName)
+                    if (resId != 0) {
+                        sportIllustrations.add(SelectedImage(resId = resId, index = imageId))
+                    }
+                }
+            }
+        }
+
+        val positiveIllustrations = mutableListOf<SelectedImage>()
+        var posCount = 86
         for ((prefix, count) in positivePrefixes) {
             for (i in 1..count) {
-                val resId = resources.getIdentifier("${prefix}_$i", "drawable", packageName)
-                if (resId != 0) {
-                    positiveIllustrations.add(resId)
+                posCount++
+                val imageId = posCount
+                val isHidden = hiddenMap[imageId] ?: false
+                if (!isHidden) {
+                    val resId = resources.getIdentifier("${prefix}_$i", "drawable", packageName)
+                    if (resId != 0) {
+                        positiveIllustrations.add(SelectedImage(resId = resId, index = imageId))
+                    }
                 }
             }
         }
 
-        val sportIndex = sportIllustrations.indices.random()
-        val positiveIndex = positiveIllustrations.indices.random()
+        Log.d("ImagesActivity", "Positive illustrations count (hidden=false): ${positiveIllustrations.size} / ${posCount - 86}")
 
-        return Pair(
-            SelectedImage(
-                resId = sportIllustrations[sportIndex],
-                index = sportIndex + 1
-            ),
-            SelectedImage(
-                resId = positiveIllustrations[positiveIndex],
-                index = positiveIndex + 87
-            )
-        )
+        // Fallback if all positive images are marked as hidden
+        if (positiveIllustrations.isEmpty()) {
+            Log.w("ImagesActivity", "All positive images are hidden! Falling back to all positive images.")
+            posCount = 86
+            for ((prefix, count) in positivePrefixes) {
+                for (i in 1..count) {
+                    posCount++
+                    val imageId = posCount
+                    val resId = resources.getIdentifier("${prefix}_$i", "drawable", packageName)
+                    if (resId != 0) {
+                        positiveIllustrations.add(SelectedImage(resId = resId, index = imageId))
+                    }
+                }
+            }
+        }
+
+        val selectedSport = sportIllustrations.random()
+        val selectedPositive = positiveIllustrations.random()
+
+        return Pair(selectedSport, selectedPositive)
     }
 
 }
