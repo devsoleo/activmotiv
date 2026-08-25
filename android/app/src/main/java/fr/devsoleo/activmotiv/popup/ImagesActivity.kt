@@ -2,6 +2,7 @@ package fr.devsoleo.activmotiv.popup
 
 import android.app.AlertDialog
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
@@ -18,16 +19,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import fr.devsoleo.activmotiv.R
+import androidx.lifecycle.lifecycleScope
 import fr.devsoleo.activmotiv.api.Api
 import kotlin.random.Random
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import androidx.lifecycle.lifecycleScope
 
 class ImagesActivity : ComponentActivity() {
     private var exposureTime : Long = 0
@@ -159,6 +160,10 @@ class ImagesActivity : ComponentActivity() {
             topImageIndex = top.index
             bottomImageIndex = bottom.index
 
+            // Retrieve or download cached Bitmaps for popup display
+            val topBitmap = Api.getOrDownloadBitmap(applicationContext, top.relativePath)
+            val bottomBitmap = Api.getOrDownloadBitmap(applicationContext, bottom.relativePath)
+
             // The swipe direction ALWAYS goes from AP (sport) to POS (positive)
             val isSwipeUp = !isApAtTop
 
@@ -218,7 +223,12 @@ class ImagesActivity : ComponentActivity() {
                             )
                         }
                 ) {
-                    StackedImages(top.resId, bottom.resId)
+                    StackedImages(
+                        topImageRes = top.resId,
+                        topBitmap = topBitmap,
+                        bottomImageRes = bottom.resId,
+                        bottomBitmap = bottomBitmap
+                    )
 
                     // Infinite animation for visual guides (ripples)
                     val infiniteTransition = rememberInfiniteTransition()
@@ -364,9 +374,21 @@ class ImagesActivity : ComponentActivity() {
         skip = false
     }
 
-    private fun getRandomIllustrations(hiddenMap: Map<Int, Boolean>): Pair<SelectedImage, SelectedImage> {
-        val api = Api(this)
+    private fun getRelativePath(prefix: String, i: Int): String {
+        return when (prefix.lowercase()) {
+            "apex" -> "illustrations/AP/AP_Exercice/APEX_$i.jpg"
+            "aplt" -> "illustrations/AP/AP_Loisirs/APLT_$i.jpg"
+            "apta" -> "illustrations/AP/AP_TransportsActifs/APTA_$i.jpg"
+            "usac" -> "illustrations/POS/US_Accomplissement/USAC_$i.jpg"
+            "usan" -> "illustrations/POS/US_Animaux/USAN_$i.jpg"
+            "usna" -> "illustrations/POS/US_Nature/USNA_$i.jpg"
+            "uspl" -> "illustrations/POS/US_Plaisir/USPL_$i.jpg"
+            "usrs" -> "illustrations/POS/US_RelationSociale/USRS_$i.jpg"
+            else -> "illustrations/AP/AP_Exercice/APEX_$i.jpg"
+        }
+    }
 
+    private fun getRandomIllustrations(hiddenMap: Map<Int, Boolean>): Pair<SelectedImage, SelectedImage> {
         val sportPrefixes = listOf(
             Pair("apex", 33),
             Pair("aplt", 28),
@@ -390,9 +412,8 @@ class ImagesActivity : ComponentActivity() {
                 val isHidden = hiddenMap[imageId] ?: false
                 if (!isHidden) {
                     val resId = resources.getIdentifier("${prefix}_$i", "drawable", packageName)
-                    if (resId != 0) {
-                        sportIllustrations.add(SelectedImage(resId = resId, index = imageId))
-                    }
+                    val relativePath = getRelativePath(prefix, i)
+                    sportIllustrations.add(SelectedImage(resId = resId, index = imageId, relativePath = relativePath))
                 }
             }
         }
@@ -408,9 +429,8 @@ class ImagesActivity : ComponentActivity() {
                     sportCount++
                     val imageId = sportCount
                     val resId = resources.getIdentifier("${prefix}_$i", "drawable", packageName)
-                    if (resId != 0) {
-                        sportIllustrations.add(SelectedImage(resId = resId, index = imageId))
-                    }
+                    val relativePath = getRelativePath(prefix, i)
+                    sportIllustrations.add(SelectedImage(resId = resId, index = imageId, relativePath = relativePath))
                 }
             }
         }
@@ -424,9 +444,8 @@ class ImagesActivity : ComponentActivity() {
                 val isHidden = hiddenMap[imageId] ?: false
                 if (!isHidden) {
                     val resId = resources.getIdentifier("${prefix}_$i", "drawable", packageName)
-                    if (resId != 0) {
-                        positiveIllustrations.add(SelectedImage(resId = resId, index = imageId))
-                    }
+                    val relativePath = getRelativePath(prefix, i)
+                    positiveIllustrations.add(SelectedImage(resId = resId, index = imageId, relativePath = relativePath))
                 }
             }
         }
@@ -442,9 +461,8 @@ class ImagesActivity : ComponentActivity() {
                     posCount++
                     val imageId = posCount
                     val resId = resources.getIdentifier("${prefix}_$i", "drawable", packageName)
-                    if (resId != 0) {
-                        positiveIllustrations.add(SelectedImage(resId = resId, index = imageId))
-                    }
+                    val relativePath = getRelativePath(prefix, i)
+                    positiveIllustrations.add(SelectedImage(resId = resId, index = imageId, relativePath = relativePath))
                 }
             }
         }
@@ -459,34 +477,60 @@ class ImagesActivity : ComponentActivity() {
 
 data class SelectedImage(
     val resId: Int,
-    val index: Int
+    val index: Int,
+    val relativePath: String
 )
 
 @Composable
 fun StackedImages(
     topImageRes: Int,
-    bottomImageRes: Int
+    topBitmap: Bitmap?,
+    bottomImageRes: Int,
+    bottomBitmap: Bitmap?
 ) {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.SpaceEvenly,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Image(
-            painter = painterResource(topImageRes),
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            contentDescription = "top_illustration",
-        )
-        Image(
-            painter = painterResource(bottomImageRes),
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            contentScale = ContentScale.Crop,
-            contentDescription = "bottom_illustration",
-        )
+        if (topBitmap != null) {
+            Image(
+                bitmap = topBitmap.asImageBitmap(),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentDescription = "top_illustration",
+            )
+        } else {
+            Image(
+                painter = painterResource(topImageRes),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentDescription = "top_illustration",
+            )
+        }
+
+        if (bottomBitmap != null) {
+            Image(
+                bitmap = bottomBitmap.asImageBitmap(),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentDescription = "bottom_illustration",
+            )
+        } else {
+            Image(
+                painter = painterResource(bottomImageRes),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentDescription = "bottom_illustration",
+            )
+        }
     }
 }

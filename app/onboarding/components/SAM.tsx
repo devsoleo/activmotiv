@@ -92,6 +92,7 @@ export default function SAM({
               style={styles.evalMainImage}
               contentFit="cover"
               transition={150}
+              cachePolicy="disk"
             />
           </View>
 
@@ -251,9 +252,12 @@ const styles = StyleSheet.create({
     marginBottom: 12
   },
   evalImageContainer: {
-    width: '80%',
-    aspectRatio: 16 / 9,
+    width: '70%',
+    maxWidth: 240,
+    aspectRatio: 1,
     alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
     borderRadius: 10,
     overflow: 'hidden',
     position: 'relative'

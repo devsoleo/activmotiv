@@ -1,15 +1,20 @@
 package fr.devsoleo.activmotiv.api
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.util.Log
 import com.reactnativecommunity.asyncstorage.next.Entry
 import com.reactnativecommunity.asyncstorage.next.StorageModule
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import fr.devsoleo.activmotiv.BuildConfig
+import java.io.File
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
-import fr.devsoleo.activmotiv.BuildConfig
-import android.util.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -152,10 +157,74 @@ class Api(private val ctx: Context) {
                     hiddenMap[imageId] = hidden
                 }
             }
+
+            // Pre-cache unhidden images in background
+            GlobalScope.launch(Dispatchers.IO) {
+                for ((imageId, hidden) in hiddenMap) {
+                    if (!hidden) {
+                        val relativePath = getRelativePathForImageId(imageId)
+                        getOrDownloadBitmap(ctx, relativePath)
+                    }
+                }
+            }
+
             hiddenMap
         } catch (e: Exception) {
             Log.e("Api", "Error syncing SAM images from server: ${e.message}", e)
             getHiddenImagesMap()
+        }
+    }
+
+    companion object {
+        const val STATIC_BASE_URL = "https://activmotiv.fr/static/"
+        const val STATIC_API_KEY = "b4b01d6c7472362a30ac5470aac7f6be"
+
+        fun getStaticImageUrl(relativePath: String): String {
+            return "$STATIC_BASE_URL$relativePath?key=$STATIC_API_KEY"
+        }
+
+        fun getRelativePathForImageId(imageId: Int): String {
+            return when {
+                imageId in 1..33 -> "illustrations/AP/AP_Exercice/APEX_${imageId}.jpg"
+                imageId in 34..61 -> "illustrations/AP/AP_Loisirs/APLT_${imageId - 33}.jpg"
+                imageId in 62..86 -> "illustrations/AP/AP_TransportsActifs/APTA_${imageId - 61}.jpg"
+                imageId in 87..98 -> "illustrations/POS/US_Accomplissement/USAC_${imageId - 86}.jpg"
+                imageId in 99..111 -> "illustrations/POS/US_Animaux/USAN_${imageId - 98}.jpg"
+                imageId in 112..120 -> "illustrations/POS/US_Nature/USNA_${imageId - 111}.jpg"
+                imageId in 121..137 -> "illustrations/POS/US_Plaisir/USPL_${imageId - 120}.jpg"
+                imageId in 138..142 -> "illustrations/POS/US_RelationSociale/USRS_${imageId - 137}.jpg"
+                else -> "illustrations/AP/AP_Exercice/APEX_1.jpg"
+            }
+        }
+
+        suspend fun getOrDownloadBitmap(ctx: Context, relativePath: String): Bitmap? = withContext(Dispatchers.IO) {
+            val file = File(ctx.cacheDir, "static_cache/$relativePath")
+            if (!file.exists() || file.length() == 0L) {
+                file.parentFile?.mkdirs()
+                try {
+                    val url = URL(getStaticImageUrl(relativePath))
+                    val connection = url.openConnection() as HttpURLConnection
+                    connection.connectTimeout = 10000
+                    connection.readTimeout = 10000
+                    connection.inputStream.use { input ->
+                        file.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("Api", "Failed to download static image $relativePath: ${e.message}")
+                }
+            }
+            if (file.exists() && file.length() > 0L) {
+                try {
+                    BitmapFactory.decodeFile(file.absolutePath)
+                } catch (e: Exception) {
+                    Log.e("Api", "Error decoding bitmap from file $relativePath: ${e.message}")
+                    null
+                }
+            } else {
+                null
+            }
         }
     }
 }

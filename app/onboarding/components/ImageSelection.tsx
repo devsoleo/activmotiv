@@ -108,6 +108,7 @@ export default function ImageSelection({
                       ]}
                       contentFit="cover"
                       transition={150}
+                      cachePolicy="disk"
                     />
                     {isSelected && (
                       <View style={[styles.gridImageCheckWrapper, { backgroundColor: theme.colors.surface }]}>

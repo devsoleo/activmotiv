@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { StyleSheet, View, Image, Dimensions, ScrollView } from 'react-native'
+import { StyleSheet, View, Dimensions, ScrollView } from 'react-native'
+import { Image as ExpoImage } from 'expo-image'
 import { Text, Button, Card, IconButton, useTheme, List, Divider, Snackbar } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -14,6 +15,47 @@ import ImageSelection from './components/ImageSelection'
 import SAM from './components/SAM'
 
 registerTranslation('fr', fr)
+
+export type DayKey = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN'
+export type ReminderType = 'QUESTIONNAIRE' | 'SENSOR'
+
+export type ReminderSchedule = Record<DayKey, string>
+
+export interface RemindersState {
+  QUESTIONNAIRE: ReminderSchedule
+  SENSOR: ReminderSchedule
+}
+
+const DAYS: { key: DayKey; label: string; short: string }[] = [
+  { key: 'MON', label: 'Lundi', short: 'Lun' },
+  { key: 'TUE', label: 'Mardi', short: 'Mar' },
+  { key: 'WED', label: 'Mercredi', short: 'Mer' },
+  { key: 'THU', label: 'Jeudi', short: 'Jeu' },
+  { key: 'FRI', label: 'Vendredi', short: 'Ven' },
+  { key: 'SAT', label: 'Samedi', short: 'Sam' },
+  { key: 'SUN', label: 'Dimanche', short: 'Dim' },
+]
+
+const DEFAULT_REMINDERS: RemindersState = {
+  QUESTIONNAIRE: {
+    MON: '08:00',
+    TUE: '08:00',
+    WED: '08:00',
+    THU: '08:00',
+    FRI: '08:00',
+    SAT: '10:00',
+    SUN: '10:00',
+  },
+  SENSOR: {
+    MON: '08:00',
+    TUE: '08:00',
+    WED: '08:00',
+    THU: '08:00',
+    FRI: '08:00',
+    SAT: '08:00',
+    SUN: '08:00',
+  },
+}
 
 export default function OnboardingScreen() {
   const theme = useTheme()
@@ -57,16 +99,21 @@ export default function OnboardingScreen() {
   const [ratings, setRatings] = useState<Record<number, { valence: number | null, arousal: number | null }>>({})
 
   // Step 4: Time Config States
-  const [weekHour, setWeekHour] = useState(8)
-  const [weekendHour, setWeekendHour] = useState(10)
-  const [sensorHour, setSensorHour] = useState(8)
-  const [activePicker, setActivePicker] = useState<'week' | 'weekend' | 'sensor' | null>(null)
+  const [reminders, setReminders] = useState<RemindersState>(DEFAULT_REMINDERS)
+  const [activePicker, setActivePicker] = useState<{ type: ReminderType; day: DayKey } | null>(null)
   const [snackbarVisible, setSnackbarVisible] = useState(false)
   const [snackbarText, setSnackbarText] = useState('')
 
   const totalSteps = 5
   const screenWidth = Dimensions.get('window').width
   const isLastStep = step === totalSteps - 1
+
+  useEffect(() => {
+    const uris = illustrationsList.map((item) => item.source?.uri).filter((uri): uri is string => Boolean(uri))
+    if (uris.length > 0) {
+      ExpoImage.prefetch(uris)
+    }
+  }, [])
 
   useEffect(() => {
     if (!accessToken) return
@@ -76,27 +123,21 @@ export default function OnboardingScreen() {
         const uid = decoded['uid']
         if (!uid) return
 
-        const savedWeek = await AsyncStorage.getItem(`questionnaire_hour_week_${uid}`)
-        if (savedWeek) {
-          const h = parseInt(savedWeek.split(':')[0], 10)
-          if (!isNaN(h) && h >= 5 && h <= 13) setWeekHour(h)
-        }
-        const savedWeekend = await AsyncStorage.getItem(`questionnaire_hour_weekend_${uid}`)
-        if (savedWeekend) {
-          const h = parseInt(savedWeekend.split(':')[0], 10)
-          if (!isNaN(h) && h >= 5 && h <= 13) setWeekendHour(h)
-        }
-        const savedSensor = await AsyncStorage.getItem(`sensor_hour_${uid}`)
-        if (savedSensor) {
-          const h = parseInt(savedSensor.split(':')[0], 10)
-          if (!isNaN(h) && h >= 5 && h <= 13) setSensorHour(h)
+        const cached = await AsyncStorage.getItem(`user_reminders_${uid}`)
+        if (cached) {
+          const parsed = JSON.parse(cached)
+          if (parsed && parsed.QUESTIONNAIRE && parsed.SENSOR) {
+            setReminders(parsed)
+          }
         }
 
         const res = await api.get('/reminders')
         if (res.status === 200 && res.data) {
-          if (res.data.questionnaire_week) setWeekHour(Number(res.data.questionnaire_week))
-          if (res.data.questionnaire_weekend) setWeekendHour(Number(res.data.questionnaire_weekend))
-          if (res.data.sensor_daily) setSensorHour(Number(res.data.sensor_daily))
+          const apiReminders: RemindersState = {
+            QUESTIONNAIRE: { ...DEFAULT_REMINDERS.QUESTIONNAIRE, ...(res.data.QUESTIONNAIRE || {}) },
+            SENSOR: { ...DEFAULT_REMINDERS.SENSOR, ...(res.data.SENSOR || {}) },
+          }
+          setReminders(apiReminders)
         }
       } catch (e) {
         console.warn('Could not load existing reminders in onboarding:', e)
@@ -105,18 +146,28 @@ export default function OnboardingScreen() {
     loadSavedReminders()
   }, [accessToken])
 
-  const validateAndSetTime = (type: 'week' | 'weekend' | 'sensor', hours: number, minutes: number) => {
-    setActivePicker(null)
+  const handleConfirmTime = ({ hours, minutes }: { hours: number; minutes: number }) => {
+    if (!activePicker) return
 
     if (hours < 5 || hours > 13 || (hours === 13 && minutes > 0)) {
+      setActivePicker(null)
       setSnackbarText("L'heure de rappel doit être comprise entre 05h00 et 13h00.")
       setSnackbarVisible(true)
       return
     }
 
-    if (type === 'week') setWeekHour(hours)
-    else if (type === 'weekend') setWeekendHour(hours)
-    else if (type === 'sensor') setSensorHour(hours)
+    const { type, day } = activePicker
+    setActivePicker(null)
+
+    const formattedTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+
+    setReminders((prev) => ({
+      ...prev,
+      [type]: {
+        ...prev[type],
+        [day]: formattedTime,
+      },
+    }))
   }
 
   const handleNext = async () => {
@@ -166,25 +217,13 @@ export default function OnboardingScreen() {
         // Write SAM gallery state to local cache
         await AsyncStorage.setItem('cache_sam', JSON.stringify(finalSamCache))
 
-        // 2. Format weekday, weekend, and sensor times for local storage
-        const formattedWeekTime = `${String(weekHour).padStart(2, '0')}:00`
-        const formattedWeekendTime = `${String(weekendHour).padStart(2, '0')}:00`
-        const formattedSensorTime = `${String(sensorHour).padStart(2, '0')}:00`
-
-        // 3. Save onboarding completed and preferred times
+        // 2. Save onboarding completed and preferred times
         await AsyncStorage.setItem(`onboarded_${uid}`, 'true')
-        await AsyncStorage.setItem(`questionnaire_hour_week_${uid}`, formattedWeekTime)
-        await AsyncStorage.setItem(`questionnaire_hour_weekend_${uid}`, formattedWeekendTime)
-        await AsyncStorage.setItem(`questionnaire_hour_${uid}`, formattedWeekTime)
-        await AsyncStorage.setItem(`sensor_hour_${uid}`, formattedSensorTime)
+        await AsyncStorage.setItem(`user_reminders_${uid}`, JSON.stringify(reminders))
 
         if (isConnected) {
           try {
-            await api.put('/reminders', {
-              questionnaire_week: weekHour,
-              questionnaire_weekend: weekendHour,
-              sensor_daily: sensorHour,
-            })
+            await api.put('/reminders', reminders)
           } catch (err) {
             console.error('Failed to sync reminders to API during onboarding:', err)
           }
@@ -391,7 +430,7 @@ export default function OnboardingScreen() {
               </Text>
 
               <Text style={[styles.descriptionText, { color: theme.colors.onSurfaceVariant }]}>
-                {"Pour garantir la régularité de votre accompagnement, définissez vos préférences pour l'envoi des questionnaires et le rappel du port du capteur (entre 05h et 13h)."}
+                {"Pour garantir la régularité de votre accompagnement, définissez vos préférences pour l'envoi des questionnaires et le rappel du port du capteur pour chaque jour de la semaine."}
               </Text>
 
               <Card style={styles.timeCard}>
@@ -399,28 +438,22 @@ export default function OnboardingScreen() {
                   <Text variant="titleMedium" style={[styles.timeSectionTitle, { color: theme.colors.primary, marginBottom: 8 }]}>
                     Rappels matinaux questionnaire
                   </Text>
-
-                  <List.Item
-                    title="Semaine (Lundi - Vendredi)"
-                    description="Entre 05h et 13h"
-                    right={() => (
-                      <Button mode="outlined" onPress={() => setActivePicker('week')} style={styles.timeButton}>
-                        {`${String(weekHour).padStart(2, '0')}:00`}
-                      </Button>
-                    )}
-                    left={(props) => <List.Icon {...props} icon="calendar-clock" />}
-                  />
-                  <Divider />
-                  <List.Item
-                    title="Week-end (Samedi - Dimanche)"
-                    description="Entre 05h et 13h"
-                    right={() => (
-                      <Button mode="outlined" onPress={() => setActivePicker('weekend')} style={styles.timeButton}>
-                        {`${String(weekendHour).padStart(2, '0')}:00`}
-                      </Button>
-                    )}
-                    left={(props) => <List.Icon {...props} icon="calendar-weekend" />}
-                  />
+                  {DAYS.map((d) => (
+                    <List.Item
+                      key={`q_${d.key}`}
+                      title={d.label}
+                      right={() => (
+                        <Button
+                          mode="outlined"
+                          onPress={() => setActivePicker({ type: 'QUESTIONNAIRE', day: d.key })}
+                          style={styles.timeButton}
+                        >
+                          {reminders.QUESTIONNAIRE[d.key] || '08:00'}
+                        </Button>
+                      )}
+                      left={(props) => <List.Icon {...props} icon="calendar-clock" />}
+                    />
+                  ))}
                 </Card.Content>
               </Card>
 
@@ -429,37 +462,22 @@ export default function OnboardingScreen() {
                   <Text variant="titleMedium" style={[styles.timeSectionTitle, { color: theme.colors.primary, marginBottom: 8 }]}>
                     Rappel port du capteur
                   </Text>
-
-                  <List.Item
-                    title="Tous les matins"
-                    description="Entre 05h et 13h"
-                    right={() => (
-                      <Button mode="outlined" onPress={() => setActivePicker('sensor')} style={styles.timeButton}>
-                        {`${String(sensorHour).padStart(2, '0')}:00`}
-                      </Button>
-                    )}
-                    left={(props) => <List.Icon {...props} icon="watch-variant" />}
-                  />
-                </Card.Content>
-              </Card>
-
-              <Card style={[styles.summaryCard, { backgroundColor: theme.colors.elevation.level1, borderLeftColor: theme.colors.primary, marginTop: 12 }]}>
-                <Card.Content>
-                  <Text variant="titleSmall" style={[styles.summaryTitle, { color: theme.colors.primary }]}>
-                    {"Résumé de vos préférences :"}
-                  </Text>
-                  <View style={[styles.summaryRowItem, { borderBottomColor: theme.colors.outlineVariant }]}>
-                    <Text style={[styles.summaryLabel, { color: theme.colors.onSurfaceVariant }]}>{"Questionnaire semaine (Lun-Ven) :"}</Text>
-                    <Text style={[styles.summaryValue, { color: theme.colors.primary }]}>{`${String(weekHour).padStart(2, '0')}h00`}</Text>
-                  </View>
-                  <View style={[styles.summaryRowItem, { borderBottomColor: theme.colors.outlineVariant }]}>
-                    <Text style={[styles.summaryLabel, { color: theme.colors.onSurfaceVariant }]}>{"Questionnaire week-end (Sam-Dim) :"}</Text>
-                    <Text style={[styles.summaryValue, { color: theme.colors.primary }]}>{`${String(weekendHour).padStart(2, '0')}h00`}</Text>
-                  </View>
-                  <View style={styles.summaryRowItem}>
-                    <Text style={[styles.summaryLabel, { color: theme.colors.onSurfaceVariant }]}>{"Port du capteur (Tous les matins) :"}</Text>
-                    <Text style={[styles.summaryValue, { color: theme.colors.primary }]}>{`${String(sensorHour).padStart(2, '0')}h00`}</Text>
-                  </View>
+                  {DAYS.map((d) => (
+                    <List.Item
+                      key={`s_${d.key}`}
+                      title={d.label}
+                      right={() => (
+                        <Button
+                          mode="outlined"
+                          onPress={() => setActivePicker({ type: 'SENSOR', day: d.key })}
+                          style={styles.timeButton}
+                        >
+                          {reminders.SENSOR[d.key] || '08:00'}
+                        </Button>
+                      )}
+                      left={(props) => <List.Icon {...props} icon="watch-variant" />}
+                    />
+                  ))}
                 </Card.Content>
               </Card>
             </View>
@@ -487,44 +505,20 @@ export default function OnboardingScreen() {
         </View>
       </View>
 
-      <TimePickerModal
-        visible={activePicker === 'week'}
-        onDismiss={() => setActivePicker(null)}
-        onConfirm={({ hours, minutes }) => validateAndSetTime('week', hours, minutes)}
-        hours={weekHour}
-        minutes={0}
-        use24HourClock
-        locale="fr"
-        label="Rappel questionnaire (semaine)"
-        cancelLabel="Annuler"
-        confirmLabel="Valider"
-      />
-
-      <TimePickerModal
-        visible={activePicker === 'weekend'}
-        onDismiss={() => setActivePicker(null)}
-        onConfirm={({ hours, minutes }) => validateAndSetTime('weekend', hours, minutes)}
-        hours={weekendHour}
-        minutes={0}
-        use24HourClock
-        locale="fr"
-        label="Rappel questionnaire (week-end)"
-        cancelLabel="Annuler"
-        confirmLabel="Valider"
-      />
-
-      <TimePickerModal
-        visible={activePicker === 'sensor'}
-        onDismiss={() => setActivePicker(null)}
-        onConfirm={({ hours, minutes }) => validateAndSetTime('sensor', hours, minutes)}
-        hours={sensorHour}
-        minutes={0}
-        use24HourClock
-        locale="fr"
-        label="Rappel port du capteur"
-        cancelLabel="Annuler"
-        confirmLabel="Valider"
-      />
+      {activePicker && (
+        <TimePickerModal
+          visible={!!activePicker}
+          onDismiss={() => setActivePicker(null)}
+          onConfirm={handleConfirmTime}
+          hours={parseInt((reminders[activePicker.type][activePicker.day] || '08:00').split(':')[0], 10) || 8}
+          minutes={parseInt((reminders[activePicker.type][activePicker.day] || '08:00').split(':')[1], 10) || 0}
+          use24HourClock
+          locale="fr"
+          label={`Rappel ${activePicker.type === 'QUESTIONNAIRE' ? 'questionnaire' : 'capteur'} (${DAYS.find(d => d.key === activePicker.day)?.label})`}
+          cancelLabel="Annuler"
+          confirmLabel="Valider"
+        />
+      )}
 
       <Snackbar
         visible={snackbarVisible}

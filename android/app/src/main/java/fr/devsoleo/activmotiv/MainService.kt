@@ -21,7 +21,7 @@ class MainService : Service() {
 
     private fun startNotification() {
         val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, IMPORTANCE_DEFAULT).apply {
-            description = "ActivMotiv Notification Channel"
+            description = "Canal POPUP"
         }
 
         val notificationManager: NotificationManager =
@@ -29,8 +29,9 @@ class MainService : Service() {
         notificationManager.createNotificationChannel(channel)
 
         val notification: Notification = Notification.Builder(this, CHANNEL_ID)
-            .setContentTitle("ActivMotiv Title")
-            .setContentText("ActivMotiv Content Text")
+            .setContentTitle("ActivMotiv")
+            .setContentText("L'application est active.")
+            .setSmallIcon(R.drawable.notification_icon)
             .build()
 
         startForeground(2, notification)
@@ -50,7 +51,7 @@ class MainService : Service() {
     }
 
     companion object {
-        const val CHANNEL_ID = "ActivMotivNotif"
-        const val CHANNEL_NAME = "ActivMotiv"
+        const val CHANNEL_ID = "POPUP"
+        const val CHANNEL_NAME = "POPUP"
     }
 }

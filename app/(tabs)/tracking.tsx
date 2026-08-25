@@ -137,6 +137,18 @@ export default function TrackingScreen() {
       api.put('/notifications/token', { fcmToken: e.data })
     })
 
+    Notifications.setNotificationChannelAsync('sensor', {
+      name: 'Rappels de port de capteur',
+      description: 'Canal SENSOR',
+      importance: Notifications.AndroidImportance.MAX
+    })
+
+    Notifications.setNotificationChannelAsync('questionnaire', {
+      name: 'Rappels de questionnaire',
+      description: 'Canal QUESTIONNAIRE',
+      importance: Notifications.AndroidImportance.MAX
+    })
+
     const registerDevice = async () => {
       const androidId = await AsyncStorage.getItem('androidId')
       if (!androidId) console.log('androidId manquant')

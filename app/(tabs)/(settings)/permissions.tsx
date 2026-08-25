@@ -87,6 +87,26 @@ export default function PermissionsScreen() {
           </Card.Content>
         </Card>
 
+        {/* 4. Auto-start / Redémarrage automatique */}
+        <Card style={styles.permissionCard}>
+          <Card.Content>
+            <View style={styles.cardHeader}>
+              <Text variant="titleLarge" style={[styles.permissionTitle, { color: theme.colors.primary }]}>
+                {"4. Démarrage et redémarrage automatique"}
+              </Text>
+              <Text style={[styles.badge, { backgroundColor: theme.colors.errorContainer, color: theme.colors.onErrorContainer }]}>
+                {"Indispensable"}
+              </Text>
+            </View>
+            <Text style={[styles.cardDescription, { color: theme.colors.onSurface }]}>
+              {"Cette autorisation permet à l'application de démarrer automatiquement au démarrage du téléphone et de se relancer en arrière-plan pour assurer l'envoi des rappels et popups."}
+            </Text>
+            <Text style={[styles.guideText, { backgroundColor: theme.colors.surfaceVariant, color: theme.colors.onSurfaceVariant }]}>
+              {"👉 Comment l'activer : Dans les paramètres de votre téléphone ou de l'application, activez l'option 'Démarrage automatique' (ou 'Auto-start' / 'Lancement automatique en arrière-plan')."}
+            </Text>
+          </Card.Content>
+        </Card>
+
         <Divider style={{ marginVertical: 12, backgroundColor: theme.colors.outlineVariant }} />
 
         <Button 

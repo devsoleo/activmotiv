@@ -21,6 +21,12 @@ export default function SettingsScreen() {
       />
       <Divider />
       <List.Item
+        onPress={() => router.push("./(settings)/reminders")}
+        title={<Text variant="titleMedium" style={styles.menu}>Rappels</Text>}
+        left={props => <List.Icon {...props} icon="bell-outline" />}
+      />
+      <Divider />
+      <List.Item
         onPress={() => router.push("./(settings)/permissions")}
         title={<Text variant="titleMedium" style={styles.menu}>{"Autorisations d'auto-ouverture"}</Text>}
         left={props => <List.Icon {...props} icon="security" />}
