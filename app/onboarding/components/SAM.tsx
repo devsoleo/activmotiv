@@ -9,6 +9,7 @@ interface ImageItem {
 
 interface SAMProps {
   selectedImages: number[]
+  selectedAPImages?: number[]
   evaluationIndex: number
   setEvaluationIndex: React.Dispatch<React.SetStateAction<number>>
   ratings: Record<number, { valence: number | null; arousal: number | null }>
@@ -22,6 +23,7 @@ interface SAMProps {
 
 export default function SAM({
   selectedImages,
+  selectedAPImages,
   evaluationIndex,
   setEvaluationIndex,
   ratings,
@@ -49,9 +51,19 @@ export default function SAM({
   const currentEvalImage = illustrationsList[currentGlobalIndex] || illustrationsList[0]
   const currentRating = ratings[currentGlobalIndex] || { valence: null, arousal: null }
 
-  // Check if current image has any low rating (< 4 out of 5)
-  const hasLowRating = (currentRating.valence !== null && currentRating.valence < 4) || 
-                       (currentRating.arousal !== null && currentRating.arousal < 4)
+  // Check if current image is an AP image vs POS image
+  const isAPImage = selectedAPImages ? selectedAPImages.includes(currentGlobalIndex) : false
+
+  // Warning conditions:
+  // - POS: rating < 4/5 for valence
+  // - AP: impression particulièrement marquée (valence !== 3)
+  const showPOSWarning = !isAPImage && currentRating.valence !== null && currentRating.valence < 4
+  const showAPWarning = isAPImage && currentRating.valence !== null && currentRating.valence !== 3
+  const showWarning = showPOSWarning || showAPWarning
+
+  const warningMessage = isAPImage
+    ? "Vérification : Vous avez sélectionné cette image comme représentative de la catégorie. Si elle vous évoque une impression particulièrement marquée (positive ou négative), vous pouvez, si vous le souhaitez, retourner aux étapes précédentes pour choisir une autre image. (Cette alerte est simplement informative et n’empêche pas de poursuivre la sélection)."
+    : "Vérification : Vous avez sélectionné cette image comme étant l'une des plus plaisantes. Votre évaluation indique que vous la trouvez peu plaisante (< 4/5). Si vous souhaitez modifier votre sélection, vous pouvez retourner aux étapes précédentes pour choisir une autre image au cas où votre doigt a glissé ! (Cette alerte est simplement informative et n’empêche pas de poursuivre la sélection)."
 
   const isAllEvaluated = ratedCount === selectedImages.length
 
@@ -98,7 +110,7 @@ export default function SAM({
 
           {/* Valence (Emotion) Scale */}
           <Text variant="bodyMedium" style={[styles.samLabel, { marginTop: 14, color: theme.colors.onSurface }]}>
-            {"Quand je regarde cette image, je me sens..."}
+            {"Quand je regarde cette image, je la trouve..."}
           </Text>
           <View style={styles.samLegendRow}>
             <Text variant="bodySmall" style={[styles.samLegendText, { color: theme.colors.onSurfaceVariant }]}>
@@ -131,7 +143,7 @@ export default function SAM({
 
           {/* Arousal (Activation) Scale */}
           <Text variant="bodyMedium" style={[styles.samLabel, { color: theme.colors.onSurface }]}>
-            {"Quand je regarde cette image, je la trouve..."}
+            {"Quand je regarde cette image, je me sens..."}
           </Text>
           <View style={styles.samLegendRow}>
             <Text variant="bodySmall" style={[styles.samLegendText, { color: theme.colors.onSurfaceVariant }]}>
@@ -162,12 +174,12 @@ export default function SAM({
             })}
           </View>
 
-          {/* Informative message for rating < 4 */}
-          {hasLowRating && (
+          {/* Informative message */}
+          {showWarning && (
             <Card style={styles.warningCard}>
               <Card.Content>
                 <Text style={styles.warningText}>
-                  {"💡 Conseil de cohérence : Comme vous avez sélectionné cette image vous-même pour votre galerie de motivation, lui donner une note faible (< 4 sur 5) peut sembler contradictoire. Si cette image ne vous inspire pas de ressentis positifs, vous pouvez retourner aux étapes précédentes pour la remplacer par une autre, ou modifier votre évaluation si votre doigt a glissé ! (Cette alerte n'est pas bloquante)."}
+                  {warningMessage}
                 </Text>
               </Card.Content>
             </Card>
@@ -218,6 +230,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 18,
+    marginTop: 12,
     marginBottom: 16,
     alignSelf: 'center',
     borderWidth: 1

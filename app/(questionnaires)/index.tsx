@@ -1,12 +1,22 @@
-import { StyleSheet } from 'react-native'
+import { useMemo } from 'react'
 import { Text } from 'react-native-paper'
-import { dailyList } from '@/constants/forms'
+import { attitudeAffectiveList, attitudeInstrumentaleList, intentionList } from '@/constants/forms'
 import Questionnaire from '@/components/Questionnaire'
 import { useRouter } from 'expo-router'
 import { enqueueForm } from '@/services/queue/questionnaires'
 
+function getRandomItem<T>(list: T[]): T {
+  return list[Math.floor(Math.random() * list.length)]
+}
+
 export default function QuestionnaireScreen() {
   const router = useRouter()
+
+  const list = useMemo(() => [
+    getRandomItem(attitudeAffectiveList),
+    getRandomItem(attitudeInstrumentaleList),
+    getRandomItem(intentionList),
+  ], [])
 
   return (
     <Questionnaire
@@ -14,14 +24,14 @@ export default function QuestionnaireScreen() {
       infos={
         <>
           <Text>
-            Lisez attentivement chaque phrase et répondez sur l'échelle située en dessous en sélectionnant un nombre correspondant le mieux à ce que vous pensez.
+            {"Lisez attentivement chaque phrase et répondez sur l'échelle située en dessous en sélectionnant un nombre correspondant le mieux à ce que vous pensez."}
           </Text>
           <Text style={{ paddingTop: 12 }}>
-            (1 = pas du tout d'accord à 5 = tout à fait d'accord)
+            {"(1 à 7)"}
           </Text>
         </>
       }
-      list={dailyList}
+      list={list}
       onSubmit={async (results) => {
         await enqueueForm('questionnaires', 'daily', { results, timestamp: Date.now() })
         router.replace('/(tabs)')
@@ -29,21 +39,3 @@ export default function QuestionnaireScreen() {
     />
   )
 }
-
-const styles = StyleSheet.create({
-  title: { textAlign: 'center', paddingVertical: 12, fontWeight: "bold" },
-  text: { paddingBottom: 6, paddingTop: 6 },
-  radioGroup: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 50,
-  },
-  radioItem: {
-    alignItems: 'center',
-  },
-  radioLabel: {
-    marginBottom: 4,
-    textAlign: 'center',
-    width: 65,
-  },
-})

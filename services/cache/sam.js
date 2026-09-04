@@ -15,8 +15,15 @@ export async function loadFromServer() {
   })
 }
 
-export function syncWithServer() {
-  // api.put('/sam/all')
+export async function syncWithServer() {
+  try {
+    const cache = await getCache("sam")
+    if (Array.isArray(cache) && cache.length > 0) {
+      await api.put('/sam/batch', { items: cache })
+    }
+  } catch (error) {
+    console.error("Failed to sync SAM cache with server:", error)
+  }
 }
 
 // Image

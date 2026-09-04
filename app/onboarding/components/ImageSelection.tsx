@@ -1,5 +1,5 @@
-import React from 'react'
-import { StyleSheet, View, TouchableOpacity } from 'react-native'
+import React, { useState } from 'react'
+import { StyleSheet, View, TouchableOpacity, Modal } from 'react-native'
 import { Text, IconButton } from 'react-native-paper'
 import { Image } from 'expo-image'
 
@@ -32,6 +32,8 @@ export default function ImageSelection({
   theme,
   screenWidth
 }: ImageSelectionProps) {
+  const [previewSource, setPreviewSource] = useState<any>(null)
+
   // Styles for responsive selection grid
   const gridColumns = 3
   const gridPadding = 8
@@ -94,6 +96,9 @@ export default function ImageSelection({
                   <TouchableOpacity
                     key={item.globalIndex}
                     onPress={() => toggleImage(item.globalIndex)}
+                    onLongPress={() => setPreviewSource(item.source)}
+                    delayLongPress={200}
+                    onPressOut={() => setPreviewSource(null)}
                     activeOpacity={0.7}
                     style={[
                       styles.gridImageItem,
@@ -127,6 +132,30 @@ export default function ImageSelection({
           </View>
         )
       })}
+
+      <Modal
+        visible={!!previewSource}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setPreviewSource(null)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.modalBackdrop}
+          onPressOut={() => setPreviewSource(null)}
+        >
+          <View style={styles.modalContent} pointerEvents="none">
+            {previewSource && (
+              <Image
+                source={previewSource}
+                style={styles.previewImage}
+                contentFit="contain"
+                cachePolicy="disk"
+              />
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   )
 }
@@ -153,6 +182,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 18,
+    marginTop: 12,
     marginBottom: 16,
     alignSelf: 'center',
     borderWidth: 1
@@ -221,5 +251,23 @@ const styles = StyleSheet.create({
   gridCheckIcon: {
     margin: 0,
     padding: 0
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    height: '80%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
   }
 })

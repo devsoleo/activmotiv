@@ -15,7 +15,7 @@ export default function PermissionsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Appbar.Header statusBarHeight={0} style={{ backgroundColor: theme.colors.background }}>
         <Appbar.BackAction onPress={() => { router.back() }} />
-        <Appbar.Content title="Autorisations d'auto-ouverture" titleStyle={{ color: theme.colors.onBackground }} />
+        <Appbar.Content title="Permissions" titleStyle={{ color: theme.colors.onBackground }} />
       </Appbar.Header>
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="always">

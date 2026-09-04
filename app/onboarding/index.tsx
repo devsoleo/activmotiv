@@ -103,6 +103,7 @@ export default function OnboardingScreen() {
   const [activePicker, setActivePicker] = useState<{ type: ReminderType; day: DayKey } | null>(null)
   const [snackbarVisible, setSnackbarVisible] = useState(false)
   const [snackbarText, setSnackbarText] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const totalSteps = 5
   const screenWidth = Dimensions.get('window').width
@@ -176,63 +177,47 @@ export default function OnboardingScreen() {
         router.replace('/(auth)/login')
         return
       }
+      setIsSubmitting(true)
       try {
         const decoded = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())
         const uid = decoded['uid']
 
-        // 1. Save ratings for ALL illustrations to local cache and server using 1-based index (i + 1)
-        const networkState = await getNetworkStateAsync()
-        const isConnected = networkState.isConnected
-
-        const finalSamCache: any[] = []
-
-        for (let i = 0; i < illustrationsList.length; i++) {
+        // 1. Build rating data for ALL illustrations using 1-based index (i + 1)
+        const finalSamCache = illustrationsList.map((_, i) => {
           const isSelected = selectedImages.includes(i)
           const imageId = i + 1
           const itemRating = ratings[i]
 
-          const ratingData = {
+          return {
             image: imageId,
             valence: isSelected ? (itemRating?.valence ?? 3) : null,
             arousal: isSelected ? (itemRating?.arousal ?? 3) : null,
-            hidden: !isSelected // hidden is true if image is not selected
+            hidden: !isSelected,
           }
+        })
 
-          finalSamCache.push(ratingData)
-
-          // Save to server if connected
-          if (isConnected) {
-            try {
-              await api.put(`/sam/image/${imageId}`, {
-                valence: ratingData.valence,
-                arousal: ratingData.arousal,
-                hidden: ratingData.hidden
-              })
-            } catch (err) {
-              console.error(`Failed to upload rating for image ${imageId}:`, err)
-            }
-          }
-        }
-
-        // Write SAM gallery state to local cache
+        // Write SAM gallery state and onboarding progress to local cache
         await AsyncStorage.setItem('cache_sam', JSON.stringify(finalSamCache))
-
-        // 2. Save onboarding completed and preferred times
         await AsyncStorage.setItem(`onboarded_${uid}`, 'true')
         await AsyncStorage.setItem(`user_reminders_${uid}`, JSON.stringify(reminders))
 
-        if (isConnected) {
-          try {
-            await api.put('/reminders', reminders)
-          } catch (err) {
-            console.error('Failed to sync reminders to API during onboarding:', err)
-          }
+        // Save to server in batch if connected
+        const networkState = await getNetworkStateAsync()
+        if (networkState.isConnected) {
+          await Promise.all([
+            api.put('/sam/batch', { items: finalSamCache }),
+            api.put('/reminders', reminders),
+          ]).catch((err) => {
+            console.error('Failed to sync onboarding data with server:', err)
+          })
         }
 
         router.replace('/(tabs)')
       } catch (e) {
         console.error('Failed to complete onboarding:', e)
         router.replace('/(tabs)')
+      } finally {
+        setIsSubmitting(false)
       }
     } else {
       setStep((prev) => prev + 1)
@@ -292,6 +277,7 @@ export default function OnboardingScreen() {
   }
 
   const isNextDisabled = () => {
+    if (isSubmitting) return true
     if (step === 0) return false
     if (step === 1) return selectedAPImages.length !== targetAPCount
     if (step === 2) return selectedPOSImages.length !== targetPOSCount
@@ -337,9 +323,9 @@ export default function OnboardingScreen() {
                   <View style={styles.infoRow}>
                     <IconButton icon="image-multiple" size={28} iconColor={theme.colors.primary} />
                     <View style={styles.infoTextContainer}>
-                      <Text variant="titleMedium" style={styles.infoTitle}>Choix des images</Text>
+                      <Text variant="titleMedium" style={styles.infoTitle}>Etape 1 : Choix des images</Text>
                       <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                        {"Sélectionnez les activités physiques et images inspirantes qui vous correspondent le plus."}
+                        {"Sélectionnez des images neutres d'activités physiques et des images positives qui vous correspondent le plus"}
                       </Text>
                     </View>
                   </View>
@@ -351,7 +337,7 @@ export default function OnboardingScreen() {
                   <View style={styles.infoRow}>
                     <IconButton icon="clock-outline" size={28} iconColor={theme.colors.primary} />
                     <View style={styles.infoTextContainer}>
-                      <Text variant="titleMedium" style={styles.infoTitle}>Planification des rappels</Text>
+                      <Text variant="titleMedium" style={styles.infoTitle}>Etape 2 : Planification des rappels</Text>
                       <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
                         {"Définissez vos heures de rappels matinaux pour vos questionnaires et le port de votre capteur."}
                       </Text>
@@ -367,7 +353,7 @@ export default function OnboardingScreen() {
               title={"Sélectionnez vos images d'Activité Physique (AP)"}
               description={
                 <Text style={[styles.descriptionText, { color: theme.colors.onSurfaceVariant }]}>
-                  {"Sélectionnez vos activités physiques (5 par catégorie, 15 au total) :"}
+                  {"Pour chacune des catégories proposées, choisissez 5 images qui vous paraissent les plus appropriées pour constituer un ensemble représentatif de la catégorie (5 par catégories, soit 15 au total) : "}
                 </Text>
               }
               categories={[
@@ -389,7 +375,7 @@ export default function OnboardingScreen() {
               title={"Sélectionnez vos images Positives (POS)"}
               description={
                 <Text style={[styles.descriptionText, { color: theme.colors.onSurfaceVariant }]}>
-                  {`Sélectionnez ${targetPOSCount} images positives ou inspirantes :`}
+                  {"Parmi toutes ces images, sélectionnez les images les plus plaisantes."}
                 </Text>
               }
               categories={[
@@ -411,6 +397,7 @@ export default function OnboardingScreen() {
           {step === 3 && (
             <SAM
               selectedImages={selectedImages}
+              selectedAPImages={selectedAPImages}
               evaluationIndex={evaluationIndex}
               setEvaluationIndex={setEvaluationIndex}
               ratings={ratings}
@@ -426,11 +413,11 @@ export default function OnboardingScreen() {
           {step === 4 && (
             <View style={styles.stepContainer}>
               <Text variant="headlineSmall" style={[styles.stepTitle, { color: theme.colors.primary }]}>
-                Planifier vos Rappels
+                Planifiez vos rappels matinaux
               </Text>
 
               <Text style={[styles.descriptionText, { color: theme.colors.onSurfaceVariant }]}>
-                {"Pour garantir la régularité de votre accompagnement, définissez vos préférences pour l'envoi des questionnaires et le rappel du port du capteur pour chaque jour de la semaine."}
+                {"Les rappels doivent être compris entre 5 heures et 13 heures.\n\nRassurez-vous, si vos disponibilités changent, vous pourrez modifier vos horaires à tout moment dans l’onglet « Paramètres > Mes rappels » de l’application."}
               </Text>
 
               <Card style={styles.timeCard}>
@@ -488,7 +475,7 @@ export default function OnboardingScreen() {
       <View style={[styles.navigationFooter, { backgroundColor: theme.colors.background, borderTopColor: theme.colors.outlineVariant }]}>
         <View style={styles.footerLeft}>
           {step > 0 && (
-            <Button mode="outlined" onPress={handleBack} style={styles.navButton}>
+            <Button mode="outlined" onPress={handleBack} disabled={isSubmitting} style={styles.navButton}>
               Retour
             </Button>
           )}
@@ -498,6 +485,7 @@ export default function OnboardingScreen() {
             mode="contained"
             onPress={handleNext}
             disabled={isNextDisabled()}
+            loading={isSubmitting}
             style={styles.navButton}
           >
             {isLastStep ? "Commencer" : "Suivant"}
