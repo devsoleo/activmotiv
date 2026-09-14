@@ -1,9 +1,53 @@
-import { Slot } from 'expo-router'
+import { useEffect } from 'react'
+import { Slot, useRouter } from 'expo-router'
 import { PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper'
 import { useColorScheme } from 'react-native'
+import * as Notifications from 'expo-notifications'
 import { AuthProvider } from '@/contexts/auth'
 
 console.log(process.env.EXPO_PUBLIC_API_URL)
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+})
+
+function NotificationObserver() {
+  const router = useRouter()
+
+  useEffect(() => {
+    const handleNotificationResponse = (response: Notifications.NotificationResponse) => {
+      const data = response?.notification?.request?.content?.data
+      const type = data?.type
+      const url = data?.url
+
+      if (url) {
+        router.push(url as any)
+      } else if (type === 'QUESTIONNAIRE') {
+        router.push('/(questionnaires)')
+      } else if (type === 'SENSOR') {
+        router.push('/(sensor)' as any)
+      }
+    }
+
+    const subscription = Notifications.addNotificationResponseReceivedListener(handleNotificationResponse)
+
+    Notifications.getLastNotificationResponseAsync().then(response => {
+      if (response) {
+        handleNotificationResponse(response)
+      }
+    })
+
+    return () => subscription.remove()
+  }, [router])
+
+  return null
+}
 
 const lightTheme = {
   ...MD3LightTheme,
@@ -106,6 +150,7 @@ export default function RootLayout() {
   return (
     <PaperProvider theme={theme}>
       <AuthProvider>
+        <NotificationObserver />
         <Slot />
       </AuthProvider>
     </PaperProvider>

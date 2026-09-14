@@ -24,7 +24,7 @@ export default function PermissionsScreen() {
         </Text>
         
         <Text style={[styles.introText, { color: theme.colors.onSurfaceVariant }]}>
-          {"Pour que l'ouverture automatique des illustrations de motivation fonctionne correctement lorsque vous activez votre écran, certaines permissions Android doivent être accordées."}
+          {"Pour que l'ouverture automatique des images fonctionne correctement lorsque vous activez votre écran, certaines permissions Android doivent être accordées."}
         </Text>
 
         {/* 1. System Overlay Permission */}
@@ -39,7 +39,7 @@ export default function PermissionsScreen() {
               </Text>
             </View>
             <Text style={[styles.cardDescription, { color: theme.colors.onSurface }]}>
-              {"Cette autorisation permet à l'application d'afficher la fenêtre popup contenant vos images de motivation par-dessus l'écran actuel."}
+              {"Cette autorisation permet à l'application d'afficher la fenêtre popup contenant vos images par-dessus l'écran actuel."}
             </Text>
             <Text style={[styles.guideText, { backgroundColor: theme.colors.surfaceVariant, color: theme.colors.onSurfaceVariant }]}>
               {"👉 Comment l'activer : Cliquez sur le bouton ci-dessous, puis recherchez 'ActivMotiv' dans la liste et cochez 'Autoriser l'affichage sur d'autres applications'."}

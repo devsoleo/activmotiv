@@ -1,7 +1,7 @@
 const attitudeAffectiveList = [
   { uid: 'aa1', content: "Aujourd'hui, être physiquement actif me semble :", answers: [{ minimum: "Désagréable", maximum: "Agréable", size: 7 }] },
   { uid: 'aa2', content: "Aujourd'hui, pratiquer une activité physique serait :", answers: [{ minimum: "Déplaisant", maximum: "Plaisant", size: 7 }] },
-  { uid: 'aa3', content: "Aujourd'hui, être physiquement actif me semble :", answers: [{ minimum: "Ennuyant", maximum: "Amusant", size: 7 }] },
+  { uid: 'aa3', content: "Aujourd'hui, être physiquement actif me semble :", answers: [{ minimum: "Ennuyeux", maximum: "Amusant", size: 7 }] },
   { uid: 'aa4', content: "Aujourd'hui, pratiquer une activité physique serait :", answers: [{ minimum: "Stressant", maximum: "Relaxant", size: 7 }] },
   { uid: 'aa5', content: "Aujourd'hui, être physiquement actif me semble :", answers: [{ minimum: "Pénible", maximum: "Divertissant", size: 7 }] }
 ]
