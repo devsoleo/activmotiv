@@ -91,6 +91,9 @@ export default function LoginPage() {
       <TouchableOpacity style={{ marginTop: 32 }} onPress={handleSignupRedirect}>
         <Text style={[styles.signupText, { color: theme.colors.primary }]}>Première connexion ?</Text>
       </TouchableOpacity>
+      <Text variant="bodySmall" style={styles.apiUrlText}>
+        {process.env.EXPO_PUBLIC_API_URL}
+      </Text>
     </KeyboardAvoidingView>
   )
 }
@@ -113,6 +116,11 @@ const styles = StyleSheet.create({
   },
   signupText: {
     textAlign: 'center',
-    marginBottom: 64,
+  },
+  apiUrlText: {
+    textAlign: 'center',
+    opacity: 0.6,
+    marginTop: 8,
+    marginBottom: 48,
   },
 })

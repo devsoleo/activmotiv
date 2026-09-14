@@ -17,6 +17,7 @@ export const api = axios.create({
 api.defaults.timeout = 2000
 
 api.interceptors.request.use(async (config) => {
+  config.baseURL = process.env.EXPO_PUBLIC_API_URL || config.baseURL
   const accessToken = await getStorageItem('accessToken')
 
   if (accessToken) {

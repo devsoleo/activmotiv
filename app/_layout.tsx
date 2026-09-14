@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Slot, useRouter } from 'expo-router'
 import { PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper'
 import { useColorScheme } from 'react-native'
@@ -19,10 +19,17 @@ Notifications.setNotificationHandler({
 
 function NotificationObserver() {
   const router = useRouter()
+  const lastResponse = Notifications.useLastNotificationResponse()
+  const handledResponseId = useRef<string | null>(null)
 
   useEffect(() => {
-    const handleNotificationResponse = (response: Notifications.NotificationResponse) => {
-      const data = response?.notification?.request?.content?.data
+    if (
+      lastResponse &&
+      lastResponse.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER &&
+      lastResponse.notification.request.identifier !== handledResponseId.current
+    ) {
+      handledResponseId.current = lastResponse.notification.request.identifier
+      const data = lastResponse.notification.request.content.data
       const type = data?.type
       const url = data?.url
 
@@ -34,17 +41,7 @@ function NotificationObserver() {
         router.push('/(sensor)' as any)
       }
     }
-
-    const subscription = Notifications.addNotificationResponseReceivedListener(handleNotificationResponse)
-
-    Notifications.getLastNotificationResponseAsync().then(response => {
-      if (response) {
-        handleNotificationResponse(response)
-      }
-    })
-
-    return () => subscription.remove()
-  }, [router])
+  }, [lastResponse, router])
 
   return null
 }
