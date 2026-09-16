@@ -8,7 +8,7 @@ export default function Home() {
   const [index, setIndex] = useState(0)
 
   const [routes] = useState([
-    { key: 'tracking', title: 'Suivi', icon: 'clipboard-text-outline' },
+    { key: 'tracking', title: 'Mon suivi', icon: 'clipboard-text-outline' },
     { key: 'settings', title: 'Paramètres', icon: 'cog-outline' },
   ])
 

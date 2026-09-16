@@ -22,6 +22,22 @@ export function syncWithServer() {
   })
 }
 
+export function syncSteppersWithServer() {
+  return api.get('/analytics/steppers')
+    .then((response) => response.data)
+    .then(async (data) => {
+      if (data) {
+        await setItem('tracking', 'steppers', data)
+      }
+      return data
+    })
+}
+
+export async function getCachedSteppers() {
+  const steppers = await getItem('tracking', 'steppers')
+  return steppers
+}
+
 export async function getTrackingItem(label) {
   const item = await getItem('tracking', label)
 

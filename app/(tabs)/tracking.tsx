@@ -8,9 +8,10 @@ import * as Notifications from 'expo-notifications'
 import * as Device from 'expo-device'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { api } from '@/services/api'
-import { getTrackingItem, syncWithServer } from '@/services/cache/tracking'
+import { getTrackingItem, syncWithServer, getCachedSteppers, syncSteppersWithServer } from '@/services/cache/tracking'
 import { getCachedQuestionnaireStatus, syncQuestionnaireStatusWithServer } from '@/services/cache/questionnaires'
 import Task from '@/components/Task'
+import WeeklyStepper, { DayStep, DayStatus } from '@/components/WeeklyStepper'
 
 function formatDuration(totalMilliseconds: number | null | undefined): string {
   if (totalMilliseconds == null || isNaN(totalMilliseconds) || totalMilliseconds <= 0) return '0s'
@@ -53,6 +54,93 @@ export default function TrackingScreen() {
   
   // State pour les questionnaires
   const [displayQuestionnaire, setDisplayQuestionnaire] = useState<boolean>(false)
+
+  // States pour les steppers
+  const currentJsDay = new Date().getDay()
+  const currentDayIndex = currentJsDay === 0 ? 6 : currentJsDay - 1
+
+  const defaultDays: DayStep[] = ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((label, idx) => ({
+    label,
+    status: idx < currentDayIndex ? 'not-done' : 'empty',
+    completed: false
+  }))
+  const [questionnairesDays, setQuestionnairesDays] = useState<DayStep[]>(defaultDays)
+  const [questionnairesCount, setQuestionnairesCount] = useState<number>(0)
+  const [sensorDays, setSensorDays] = useState<DayStep[]>(defaultDays)
+  const [sensorCount, setSensorCount] = useState<number>(0)
+  const [inActivePhase, setInActivePhase] = useState<boolean>(false)
+
+  // Chargement des steppers
+  const getSteppersData = async () => {
+    try {
+      const cached = await getCachedSteppers()
+      if (cached) {
+        if (cached.questionnaires) setQuestionnairesDays(cached.questionnaires)
+        if (cached.sensor) setSensorDays(cached.sensor)
+        if (cached.questionnairesCount !== undefined) setQuestionnairesCount(cached.questionnairesCount)
+        if (cached.sensorCount !== undefined) setSensorCount(cached.sensorCount)
+        if (typeof cached.inActivePhase === 'boolean') setInActivePhase(cached.inActivePhase)
+      }
+    } catch (e) {
+      console.error("Failed to load steppers from cache:", e)
+    }
+
+    try {
+      const data = await syncSteppersWithServer()
+      if (data) {
+        if (data.questionnaires) setQuestionnairesDays(data.questionnaires)
+        if (data.sensor) setSensorDays(data.sensor)
+        if (data.questionnairesCount !== undefined) setQuestionnairesCount(data.questionnairesCount)
+        if (data.sensorCount !== undefined) setSensorCount(data.sensorCount)
+        if (typeof data.inActivePhase === 'boolean') setInActivePhase(data.inActivePhase)
+      }
+    } catch (e) {
+      console.error("Failed to sync steppers with server:", e)
+    }
+  }
+
+  // Toggle du port du capteur pour un jour (passé ou présent)
+  const handleToggleSensorDay = async (dayIndex: number) => {
+    if (dayIndex > currentDayIndex) return
+
+    setSensorDays(prev => {
+      const updated = [...prev]
+      const target = updated[dayIndex]
+      const isCurrentlyDone = target.status === 'done' || target.completed
+
+      let newStatus: DayStatus = 'empty'
+      if (!isCurrentlyDone) {
+        newStatus = 'done'
+      } else {
+        newStatus = dayIndex < currentDayIndex ? 'not-done' : 'empty'
+      }
+
+      updated[dayIndex] = {
+        ...target,
+        status: newStatus,
+        completed: newStatus === 'done'
+      }
+      return updated
+    })
+
+    setSensorCount(prev => {
+      const target = sensorDays[dayIndex]
+      const isCurrentlyDone = target.status === 'done' || target.completed
+      return isCurrentlyDone ? Math.max(0, prev - 1) : prev + 1
+    })
+
+    try {
+      await api.post('/sensor/toggle', { dayIndex })
+      const data = await syncSteppersWithServer()
+      if (data) {
+        if (data.sensor) setSensorDays(data.sensor)
+        if (data.sensorCount !== undefined) setSensorCount(data.sensorCount)
+      }
+    } catch (e) {
+      console.error("Failed to toggle sensor for day:", dayIndex, e)
+      getSteppersData()
+    }
+  }
 
   // Chargement des données de suivi
   const getTracking = async () => {
@@ -162,15 +250,18 @@ export default function TrackingScreen() {
     useCallback(() => {
       getTracking()
       getQuestionnairesAndTelemetry()
+      getSteppersData()
 
       const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
         if (nextAppState === 'active') {
           getTracking()
           getQuestionnairesAndTelemetry()
+          getSteppersData()
           
           const timer = setTimeout(() => {
             getTracking()
             getQuestionnairesAndTelemetry()
+            getSteppersData()
           }, 800)
 
           return () => clearTimeout(timer)
@@ -185,25 +276,56 @@ export default function TrackingScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <Text variant="headlineLarge" style={[styles.title, { color: theme.colors.onBackground }]}>Suivi</Text>
+      <Text variant="headlineLarge" style={[styles.title, { color: theme.colors.onBackground }]}>Mon suivi</Text>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
 
         {/* Section 1 : Questionnaires */}
-        <Text variant="titleLarge" style={[styles.sectionHeader, { color: theme.colors.primary }]}>Vos questionnaires à compléter</Text>
+        {displayQuestionnaire && (
+          <>
+            <Text variant="titleLarge" style={[styles.sectionHeader, { color: theme.colors.primary }]}>
+              Vos questionnaires à compléter
+            </Text>
 
-        <Task
-          item={{
-            id: "1",
-            uid: "t1",
-            title: "Questionnaire quotidien",
-            content: displayQuestionnaire ? "Vous avez un questionnaire à remplir !" : "Aucun questionnaire à remplir pour le moment.",
-            action: { path: "/(questionnaires)/", text: "Remplir" }
-          }}
-          disabled={!displayQuestionnaire}
+            <Task
+              item={{
+                id: "1",
+                uid: "t1",
+                title: "Questionnaire quotidien",
+                content: "Vous avez un questionnaire à remplir !",
+                image: "https://activmotiv.fr/static/notifications/ema.png?key=b4b01d6c7472362a30ac5470aac7f6be",
+                action: { path: "/(questionnaires)/", text: "Remplir" }
+              }}
+              disabled={false}
+            />
+          </>
+        )}
+
+        {/* Section 2 : Progression cette semaine */}
+        <Text variant="titleLarge" style={[styles.sectionHeader, { color: theme.colors.primary, marginTop: 24 }]}>
+          Progression cette semaine
+        </Text>
+
+        {inActivePhase && (
+          <WeeklyStepper
+            title="Questionnaire journalier"
+            days={questionnairesDays}
+            completedCount={questionnairesCount}
+            icon="clipboard-check-outline"
+            currentDayIndex={currentDayIndex}
+          />
+        )}
+
+        <WeeklyStepper
+          title="Port du capteur"
+          days={sensorDays}
+          completedCount={sensorCount}
+          icon="walk"
+          currentDayIndex={currentDayIndex}
+          onDayPress={handleToggleSensorDay}
         />
 
-        {/* Section 2 : Statistiques d'utilisation */}
+        {/* Section 3 : Statistiques d'utilisation */}
         <Text variant="titleLarge" style={[styles.sectionHeader, { color: theme.colors.primary, marginTop: 24 }]}>
           Statistiques d'utilisation
         </Text>

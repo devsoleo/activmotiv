@@ -1,7 +1,8 @@
 import React from 'react'
-import { StyleSheet } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { Card, Text, Button, useTheme } from 'react-native-paper'
 import { useRouter } from 'expo-router'
+import { Image } from 'expo-image'
 
 interface TaskProps {
   item: {
@@ -9,6 +10,7 @@ interface TaskProps {
     uid: string
     title: string
     content: string
+    image?: string
     action: {
       path: string
       text: string
@@ -26,15 +28,24 @@ export default function Task({ item, disabled }: TaskProps) {
       style={[styles.card, { opacity: disabled ? 0.5 : 1 }]} 
       mode={disabled ? 'contained' : 'elevated'}
     >
-      <Card.Content>
-        <Text variant="titleMedium">{item.title}</Text>
-        <Text variant="bodyMedium" style={{ marginTop: 4, color: theme.colors.onSurfaceVariant }}>
-          {item.content}
-        </Text>
+      <Card.Content style={styles.contentRow}>
+        {item.image && (
+          <Image
+            source={{ uri: item.image }}
+            style={styles.taskImage}
+            contentFit="contain"
+          />
+        )}
+        <View style={styles.textContainer}>
+          <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>{item.title}</Text>
+          <Text variant="bodyMedium" style={{ marginTop: 4, color: theme.colors.onSurfaceVariant }}>
+            {item.content}
+          </Text>
+        </View>
       </Card.Content>
       <Card.Actions>
         {!disabled && (
-          <Button mode="text" onPress={() => router.push(item.action.path as any)}>
+          <Button mode="contained-tonal" onPress={() => router.push(item.action.path as any)}>
             {item.action.text}
           </Button>
         )}
@@ -46,6 +57,19 @@ export default function Task({ item, disabled }: TaskProps) {
 const styles = StyleSheet.create({
   card: {
     marginBottom: 10,
+    borderRadius: 12
+  },
+  contentRow: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  textContainer: {
+    flex: 1
+  },
+  taskImage: {
+    width: 56,
+    height: 56,
+    marginRight: 14,
     borderRadius: 8
   }
 })

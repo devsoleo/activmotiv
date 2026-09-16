@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
-import { Text } from 'react-native-paper'
+import { View, StyleSheet } from 'react-native'
+import { Text, useTheme } from 'react-native-paper'
 import { attitudeAffectiveList, attitudeInstrumentaleList, intentionList } from '@/constants/forms'
 import Questionnaire from '@/components/Questionnaire'
 import { useRouter } from 'expo-router'
@@ -20,6 +21,7 @@ function shuffleArray<T>(array: T[]): T[] {
 
 export default function QuestionnaireScreen() {
   const router = useRouter()
+  const theme = useTheme()
 
   const list = useMemo(() => shuffleArray([
     getRandomItem(attitudeAffectiveList),
@@ -31,14 +33,28 @@ export default function QuestionnaireScreen() {
     <Questionnaire
       title="Questionnaire"
       infos={
-        <>
-          <Text>
-            {"Lisez attentivement chaque phrase et répondez sur l'échelle située en dessous en sélectionnant un nombre correspondant le mieux à ce que vous pensez."}
+        <View style={{ gap: 12 }}>
+          <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>
+            Lisez attentivement chaque phrase et répondez sur l'échelle située en dessous en sélectionnant un nombre correspondant le mieux à ce que vous pensez.
           </Text>
-          <Text style={{ paddingTop: 12 }}>
-            {"(1 à 7)"}
-          </Text>
-        </>
+
+          <View
+            style={[
+              styles.quoteContainer,
+              {
+                backgroundColor: theme.colors.surfaceVariant,
+                borderLeftColor: theme.colors.primary
+              }
+            ]}
+          >
+            <Text variant="bodyMedium" style={[styles.quoteText, { color: theme.colors.onSurfaceVariant }]}>
+              « L’activité physique se réfère à tout mouvement corporel produit par les muscles squelettiques qui requiert une dépense d’énergie. L’activité physique désigne tous les mouvements que l’on effectue notamment dans le cadre des loisirs, pour se déplacer d’un endroit à l’autre, sur le lieu de travail ou lors des tâches ménagères. »
+            </Text>
+            <Text variant="labelMedium" style={[styles.quoteSource, { color: theme.colors.primary }]}>
+              — OMS, 2024
+            </Text>
+          </View>
+        </View>
       }
       list={list}
       onSubmit={async (results) => {
@@ -48,3 +64,21 @@ export default function QuestionnaireScreen() {
     />
   )
 }
+
+const styles = StyleSheet.create({
+  quoteContainer: {
+    padding: 14,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    marginVertical: 4
+  },
+  quoteText: {
+    fontStyle: 'italic',
+    lineHeight: 20
+  },
+  quoteSource: {
+    fontWeight: 'bold',
+    textAlign: 'right',
+    marginTop: 8
+  }
+})

@@ -53,13 +53,23 @@ export default function Questionnaire({ title, list, infos, onSubmit }: Question
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <Text variant="headlineLarge" style={[styles.title, { color: theme.colors.onBackground }]}>{ title }</Text>
+      <Text variant="headlineLarge" style={[styles.title, { color: theme.colors.onBackground }]}>{title}</Text>
 
       <InformationFrame actionName="Commencer le questionnaire" content={infos} />
 
       <ScrollView ref={scrollViewRef}>
         {list.map((item, index) => {
-          return <QuestionCard key={item.uid} question={item} globalIndex={index} globalSize={size} hasSubmit={hasSubmit} sectionRefs={sectionRefs} onUpdate={value => { handleAnswerChange(index, value)}} />;
+          return (
+            <QuestionCard
+              key={item.uid}
+              question={item}
+              globalIndex={index}
+              globalSize={size}
+              hasSubmit={hasSubmit}
+              sectionRefs={sectionRefs}
+              onUpdate={value => { handleAnswerChange(index, value) }}
+            />
+          )
         })}
       </ScrollView>
 
@@ -115,6 +125,7 @@ interface QuestionCardProps {
 }
 
 const QuestionCard = ({ question, globalIndex, globalSize, hasSubmit, sectionRefs, onUpdate }: QuestionCardProps) => {
+  const theme = useTheme()
   const [cardAnswers, setCardAnswers] = useState<any[]>(new Array(question.answers.length).fill(null))
 
   const handleCardAnswerChange = (i: number, v: number) => {
@@ -125,24 +136,47 @@ const QuestionCard = ({ question, globalIndex, globalSize, hasSubmit, sectionRef
   }
 
   return (
-    <Card style={{ margin: 12 }} ref={sectionRefs.current[globalIndex]}>
+    <Card style={{ margin: 12, borderRadius: 12 }} ref={sectionRefs.current[globalIndex]}>
       <Card.Content style={{ alignItems: 'center' }}>
-        <Text variant="titleMedium" style={{ fontWeight: "bold" }}>Question : {globalIndex + 1}/{globalSize}</Text>
-        <Text variant="titleMedium" style={{ textAlign: 'center', marginBottom: 20 }}>{question.content}</Text>
+        <Text variant="titleMedium" style={{ fontWeight: "bold", color: theme.colors.primary, marginBottom: 4 }}>
+          Question {globalIndex + 1} / {globalSize}
+        </Text>
+        <Text variant="titleMedium" style={{ textAlign: 'center', marginBottom: 20, color: theme.colors.onSurface }}>
+          {question.content}
+        </Text>
 
         {question.answers.map((answer, answerIndex) => (
-          <View key={question.uid + "_" + answerIndex} style={{ alignItems: 'center' }}>
-            <RadioButton.Group onValueChange={value => {handleCardAnswerChange(answerIndex, Number(value))}} value={String(cardAnswers[answerIndex])}>
-              <View style={styles.radioGroup}>
+          <View key={question.uid + "_" + answerIndex} style={styles.answersContainer}>
+            <RadioButton.Group
+              onValueChange={value => { handleCardAnswerChange(answerIndex, Number(value)) }}
+              value={cardAnswers[answerIndex] != null ? String(cardAnswers[answerIndex]) : ''}
+            >
+              <View style={styles.labelsRow}>
+                <Text variant="bodyMedium" style={[styles.minLabel, { color: theme.colors.onSurfaceVariant }]}>
+                  {answer.minimum}
+                </Text>
+                <Text variant="bodyMedium" style={[styles.maxLabel, { color: theme.colors.onSurfaceVariant }]}>
+                  {answer.maximum}
+                </Text>
+              </View>
+
+              <View style={styles.radioRow}>
                 {[...new Array(answer.size)].map((_, radioIndex) => (
-                  <View style={[styles.radioItem]} key={question.uid + "_" + answerIndex + "_" + radioIndex}>
-                    <Text style={styles.radioLabel}>{ (radioIndex === 0) ? answer.minimum : (radioIndex === answer.size - 1) ? answer.maximum : ""}</Text>
+                  <View style={styles.radioItem} key={question.uid + "_" + answerIndex + "_" + radioIndex}>
+                    <Text variant="labelMedium" style={{ color: theme.colors.onSurface, fontWeight: 'bold' }}>
+                      {radioIndex + 1}
+                    </Text>
                     <RadioButton value={String(radioIndex + 1)} />
                   </View>
                 ))}
               </View>
             </RadioButton.Group>
-            <Text style={{ color: 'red', paddingTop: 6 }} variant='titleMedium'>{ (cardAnswers[answerIndex] == null && hasSubmit) && "Réponse manquante !"}</Text>
+
+            {cardAnswers[answerIndex] == null && hasSubmit && (
+              <Text style={{ color: theme.colors.error, paddingTop: 8, textAlign: 'center' }} variant="bodyMedium">
+                Réponse manquante !
+              </Text>
+            )}
           </View>
         ))}
       </Card.Content>
@@ -152,18 +186,38 @@ const QuestionCard = ({ question, globalIndex, globalSize, hasSubmit, sectionRef
 
 const styles = StyleSheet.create({
   title: { textAlign: 'center', paddingVertical: 12, fontWeight: "bold" },
-  text: { paddingBottom: 6, paddingTop: 6 },
-  radioGroup: {
+  answersContainer: {
+    width: '100%',
+    paddingHorizontal: 4,
+    marginTop: 8
+  },
+  labelsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    width: '100%',
+    marginBottom: 8
+  },
+  minLabel: {
+    flex: 1,
+    textAlign: 'left',
+    paddingRight: 8,
+    fontWeight: '600'
+  },
+  maxLabel: {
+    flex: 1,
+    textAlign: 'right',
+    paddingLeft: 8,
+    fontWeight: '600'
+  },
+  radioRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%'
   },
   radioItem: {
     alignItems: 'center',
-    width: 50
-  },
-  radioLabel: {
-    marginBottom: 4,
-    textAlign: 'center',
-    width: 200,
-  },
+    justifyContent: 'center'
+  }
 })
