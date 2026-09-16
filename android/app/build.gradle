@@ -99,7 +99,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
 
-        versionCode 20
+        versionCode 21
         versionName "4.0.0"
 
         buildConfigField "String", "PUBLIC_API_URL", "\"${System.getenv("EXPO_PUBLIC_API_URL")}\""

@@ -1,5 +1,5 @@
 import { View, StyleSheet, ScrollView, AppState, AppStateStatus, Dimensions } from 'react-native'
-import { Text, Card, Button, useTheme } from 'react-native-paper'
+import { Text, Card, Button, useTheme, Icon } from 'react-native-paper'
 import { BarChart } from "react-native-gifted-charts"
 import { useCallback, useState } from 'react'
 import { useRouter, useFocusEffect } from 'expo-router'
@@ -42,6 +42,23 @@ function formatDuration(totalMilliseconds: number | null | undefined): string {
   return parts.join(' ')
 }
 
+function formatNextQuestionnaireDate(dateStr: string | null): string | null {
+  if (!dateStr) return null
+  try {
+    const date = new Date(dateStr)
+    if (isNaN(date.getTime())) return null
+    const formatted = date.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    })
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1)
+  } catch {
+    return null
+  }
+}
+
 export default function TrackingScreen() {
   const theme = useTheme()
   const router = useRouter()
@@ -69,6 +86,7 @@ export default function TrackingScreen() {
   const [sensorDays, setSensorDays] = useState<DayStep[]>(defaultDays)
   const [sensorCount, setSensorCount] = useState<number>(0)
   const [inActivePhase, setInActivePhase] = useState<boolean>(false)
+  const [nextQuestionnaireDate, setNextQuestionnaireDate] = useState<string | null>(null)
 
   // Chargement des steppers
   const getSteppersData = async () => {
@@ -80,6 +98,7 @@ export default function TrackingScreen() {
         if (cached.questionnairesCount !== undefined) setQuestionnairesCount(cached.questionnairesCount)
         if (cached.sensorCount !== undefined) setSensorCount(cached.sensorCount)
         if (typeof cached.inActivePhase === 'boolean') setInActivePhase(cached.inActivePhase)
+        if (cached.nextQuestionnaireDate !== undefined) setNextQuestionnaireDate(cached.nextQuestionnaireDate)
       }
     } catch (e) {
       console.error("Failed to load steppers from cache:", e)
@@ -93,6 +112,7 @@ export default function TrackingScreen() {
         if (data.questionnairesCount !== undefined) setQuestionnairesCount(data.questionnairesCount)
         if (data.sensorCount !== undefined) setSensorCount(data.sensorCount)
         if (typeof data.inActivePhase === 'boolean') setInActivePhase(data.inActivePhase)
+        if (data.nextQuestionnaireDate !== undefined) setNextQuestionnaireDate(data.nextQuestionnaireDate)
       }
     } catch (e) {
       console.error("Failed to sync steppers with server:", e)
@@ -306,7 +326,7 @@ export default function TrackingScreen() {
           Progression cette semaine
         </Text>
 
-        {inActivePhase && (
+        {inActivePhase ? (
           <WeeklyStepper
             title="Questionnaire journalier"
             days={questionnairesDays}
@@ -314,6 +334,24 @@ export default function TrackingScreen() {
             icon="clipboard-check-outline"
             currentDayIndex={currentDayIndex}
           />
+        ) : (
+          <Card style={styles.card} mode="elevated">
+            <Card.Content style={styles.nextQuestionnaireCardContent}>
+              <View style={[styles.nextQuestionnaireIconWrapper, { backgroundColor: theme.colors.primaryContainer }]}>
+                <Icon source="clipboard-clock-outline" size={20} color={theme.colors.primary} />
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text variant="titleMedium" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>
+                  Questionnaire journalier
+                </Text>
+                <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: 2 }}>
+                  {nextQuestionnaireDate && formatNextQuestionnaireDate(nextQuestionnaireDate)
+                    ? `Prochain questionnaire le ${formatNextQuestionnaireDate(nextQuestionnaireDate)}`
+                    : "Aucun questionnaire prévu pour le moment"}
+                </Text>
+              </View>
+            </Card.Content>
+          </Card>
         )}
 
         <WeeklyStepper
@@ -352,6 +390,17 @@ export default function TrackingScreen() {
             const maxValue = Math.max(10, roundedMax)
             const stepValue = maxValue / 10
 
+            const formattedBarData = barData.map((item: any, index: number) => {
+              let shift = 0
+              if (index === 0) {
+                shift = -20
+              }
+              return {
+                ...item,
+                leftShiftForTooltip: item.leftShiftForTooltip ?? shift,
+              }
+            })
+
             const chartProps: any = {
               disablePress: false,
               width: chartWidth,
@@ -359,7 +408,7 @@ export default function TrackingScreen() {
               initialSpacing: 25,
               barWidth: 22,
               barBorderRadius: 4,
-              data: barData,
+              data: formattedBarData,
               maxValue: maxValue,
               noOfSections: 10,
               stepValue: stepValue,
@@ -369,6 +418,9 @@ export default function TrackingScreen() {
               yAxisTextStyle: { color: theme.colors.onSurface },
               xAxisColor: theme.colors.outlineVariant,
               yAxisColor: theme.colors.outlineVariant,
+              autoCenterTooltip: true,
+              overflowTop: 40,
+              leftShiftForLastIndexTooltip: 28,
               renderTooltip: (item: any) => (
                 <View style={[styles.tooltip, { backgroundColor: theme.colors.primary }]}>
                   <Text style={{ color: theme.colors.onPrimary, fontWeight: 'bold', fontSize: 11 }}>
@@ -376,8 +428,6 @@ export default function TrackingScreen() {
                   </Text>
                 </View>
               ),
-              leftShiftForTooltip: 10,
-              topShiftForTooltip: -15
             }
             return <BarChart {...(chartProps as any)} />
           })()}
@@ -407,6 +457,18 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 8
   },
+  nextQuestionnaireCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8
+  },
+  nextQuestionnaireIconWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -423,7 +485,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold'
   },
   chartWrapper: {
-    marginVertical: 12,
+    marginTop: 18,
+    marginBottom: 12,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'visible'
