@@ -58,6 +58,11 @@ class MainActivity : ReactActivity() {
     applicationContext.startForegroundService(serviceIntent)
   }
 
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+  }
+
   /**
    * Returns the name of the main component registered from JavaScript. This is used to schedule
    * rendering of the component.

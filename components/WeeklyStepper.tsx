@@ -16,6 +16,7 @@ interface WeeklyStepperProps {
   completedCount?: number
   icon?: string
   currentDayIndex?: number
+  isAdmin?: boolean
   onDayPress?: (dayIndex: number, day: DayStep) => void
 }
 
@@ -25,6 +26,7 @@ export default function WeeklyStepper({
   completedCount,
   icon,
   currentDayIndex,
+  isAdmin = false,
   onDayPress
 }: WeeklyStepperProps) {
   const theme = useTheme()
@@ -70,7 +72,7 @@ export default function WeeklyStepper({
             const isLast = index === days.length - 1
             const nextStatus = !isLast ? getDayStatus(days[index + 1], index + 1) : 'empty'
             const isCurrentDay = currentDayIndex !== undefined && index === currentDayIndex
-            const isTogglable = onDayPress !== undefined && currentDayIndex !== undefined && index <= currentDayIndex
+            const isTogglable = onDayPress !== undefined && (isAdmin || (currentDayIndex !== undefined && index <= currentDayIndex))
 
             let circleBg = theme.colors.surfaceVariant
             let circleBorder = theme.colors.outlineVariant

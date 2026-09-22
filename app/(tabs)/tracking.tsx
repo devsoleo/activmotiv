@@ -1,9 +1,11 @@
 import { View, StyleSheet, ScrollView, AppState, AppStateStatus, Dimensions } from 'react-native'
-import { Text, Card, Button, useTheme, Icon } from 'react-native-paper'
+import { Text, Card, Button, useTheme, Icon, IconButton, Portal, Dialog } from 'react-native-paper'
 import { BarChart } from "react-native-gifted-charts"
 import { useCallback, useState } from 'react'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Buffer } from 'buffer'
+import { useSession } from '@/contexts/auth'
 import * as Notifications from 'expo-notifications'
 import * as Device from 'expo-device'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -62,12 +64,21 @@ function formatNextQuestionnaireDate(dateStr: string | null): string | null {
 export default function TrackingScreen() {
   const theme = useTheme()
   const router = useRouter()
+  const { accessToken } = useSession()
   const { width: screenWidth } = Dimensions.get('window')
+
+  let isAdmin = false
+  if (accessToken) {
+    try {
+      isAdmin = !!JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())['admin']
+    } catch {}
+  }
   
   // States pour le suivi
   const [barData, setBarData] = useState<any[]>([])
   const [openingAmount, setOpeningAmount] = useState<number>(0)
   const [exposureDuration, setExposureDuration] = useState<number>(0)
+  const [infoModalVisible, setInfoModalVisible] = useState<boolean>(false)
   
   // State pour les questionnaires
   const [displayQuestionnaire, setDisplayQuestionnaire] = useState<boolean>(false)
@@ -119,9 +130,9 @@ export default function TrackingScreen() {
     }
   }
 
-  // Toggle du port du capteur pour un jour (passé ou présent)
+  // Toggle du port du capteur pour un jour (passé ou présent, ou futur si admin)
   const handleToggleSensorDay = async (dayIndex: number) => {
-    if (dayIndex > currentDayIndex) return
+    if (!isAdmin && dayIndex > currentDayIndex) return
 
     setSensorDays(prev => {
       const updated = [...prev]
@@ -296,7 +307,18 @@ export default function TrackingScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <Text variant="headlineLarge" style={[styles.title, { color: theme.colors.onBackground }]}>Mon suivi</Text>
+      <View style={styles.headerContainer}>
+        <View style={styles.headerSide} />
+        <Text variant="headlineLarge" style={[styles.title, { color: theme.colors.onBackground }]}>Mon suivi</Text>
+        <View style={styles.headerSide}>
+          <IconButton
+            icon="information-outline"
+            size={24}
+            iconColor={theme.colors.primary}
+            onPress={() => setInfoModalVisible(true)}
+          />
+        </View>
+      </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
 
@@ -326,13 +348,14 @@ export default function TrackingScreen() {
           Progression cette semaine
         </Text>
 
-        {inActivePhase ? (
+        {inActivePhase || isAdmin ? (
           <WeeklyStepper
             title="Questionnaire journalier"
             days={questionnairesDays}
             completedCount={questionnairesCount}
             icon="clipboard-check-outline"
             currentDayIndex={currentDayIndex}
+            isAdmin={isAdmin}
           />
         ) : (
           <Card style={styles.card} mode="elevated">
@@ -345,9 +368,11 @@ export default function TrackingScreen() {
                   Questionnaire journalier
                 </Text>
                 <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: 2 }}>
-                  {nextQuestionnaireDate && formatNextQuestionnaireDate(nextQuestionnaireDate)
-                    ? `Prochain questionnaire le ${formatNextQuestionnaireDate(nextQuestionnaireDate)}`
-                    : "Aucun questionnaire prévu pour le moment"}
+                  {(() => {
+                    const formatted = nextQuestionnaireDate ? formatNextQuestionnaireDate(nextQuestionnaireDate) : null
+                    const fallback = formatNextQuestionnaireDate(new Date(Date.now() + 86400000).toISOString())
+                    return `Prochain questionnaire le ${formatted || fallback}`
+                  })()}
                 </Text>
               </View>
             </Card.Content>
@@ -360,6 +385,7 @@ export default function TrackingScreen() {
           completedCount={sensorCount}
           icon="walk"
           currentDayIndex={currentDayIndex}
+          isAdmin={isAdmin}
           onDayPress={handleToggleSensorDay}
         />
 
@@ -438,12 +464,50 @@ export default function TrackingScreen() {
         </Text>
 
       </ScrollView>
+
+      <Portal>
+        <Dialog visible={infoModalVisible} onDismiss={() => setInfoModalVisible(false)}>
+          <Dialog.Title style={{ textAlign: 'center' }}>Informations</Dialog.Title>
+          <Dialog.ScrollArea style={{ paddingHorizontal: 24, maxHeight: 400 }}>
+            <ScrollView contentContainerStyle={{ paddingVertical: 8, gap: 12 }}>
+              <Text variant="bodyMedium">
+                Cette page vous permet de suivre vos activités quotidiennes et vos statistiques d'exposition :
+              </Text>
+              <Text variant="bodyMedium">
+                • <Text style={{ fontWeight: 'bold' }}>Questionnaires à compléter</Text> : Accédez directement aux questionnaires journaliers lorsqu'ils sont disponibles.
+              </Text>
+              <Text variant="bodyMedium">
+                • <Text style={{ fontWeight: 'bold' }}>Progression cette semaine</Text> : Visualisez vos questionnaires complétés et le port du capteur jour par jour. Vous pouvez appuyer sur un jour du capteur pour mettre à jour votre suivi (en cas d'oubli vous serez contacté par le chercheur).
+              </Text>
+              <Text variant="bodyMedium">
+                • <Text style={{ fontWeight: 'bold' }}>Statistiques d'utilisation</Text> : Consultez le nombre total d'expositions et la durée d'exposition cumulée.
+              </Text>
+              <Text variant="bodyMedium">
+                • <Text style={{ fontWeight: 'bold' }}>Graphique</Text> : Visualisez l'évolution quotidienne de vos expositions au fil de la semaine.
+              </Text>
+            </ScrollView>
+          </Dialog.ScrollArea>
+          <Dialog.Actions>
+            <Button onPress={() => setInfoModalVisible(false)}>Compris</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  title: { textAlign: 'center', paddingVertical: 12, fontWeight: "bold" },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+  },
+  headerSide: {
+    width: 48,
+    alignItems: 'center',
+  },
+  title: { flex: 1, textAlign: 'center', paddingVertical: 12, fontWeight: "bold" },
   scrollContent: {
     paddingHorizontal: 16,
     paddingBottom: 32

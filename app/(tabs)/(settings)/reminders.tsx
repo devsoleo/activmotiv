@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useState, useEffect } from 'react'
 import { ScrollView, StyleSheet } from 'react-native'
-import { Appbar, Button, Snackbar, useTheme, List, Divider } from 'react-native-paper'
+import { Appbar, Button, Snackbar, useTheme, List, Divider, Text, Portal, Dialog } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Buffer } from 'buffer'
 import { useSession } from '@/contexts/auth'
@@ -62,15 +62,20 @@ export default function RemindersScreen() {
 
   const [reminders, setReminders] = useState<RemindersState>(DEFAULT_REMINDERS)
   const [activePicker, setActivePicker] = useState<{ type: ReminderType; day: DayKey } | null>(null)
+  const [infoModalVisible, setInfoModalVisible] = useState(false)
 
   const dismissSnackbar = () => setVisible(false)
 
   let uid = ''
+  let isAdmin = false
   if (accessToken != null && accessToken !== undefined) {
     try {
-      uid = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())['uid'] || ''
+      const decoded = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())
+      uid = decoded['uid'] || ''
+      isAdmin = !!decoded['admin']
     } catch {
       uid = ''
+      isAdmin = false
     }
   }
 
@@ -128,7 +133,7 @@ export default function RemindersScreen() {
   const handleConfirmTime = ({ hours, minutes }: { hours: number; minutes: number }) => {
     if (!activePicker) return
 
-    if (hours < 5 || hours > 13 || (hours === 13 && minutes > 0)) {
+    if (!isAdmin && (hours < 5 || hours > 13 || (hours === 13 && minutes > 0))) {
       setActivePicker(null)
       setSnackbarText("L'heure de rappel doit être comprise entre 05h00 et 13h00.")
       setVisible(true)
@@ -162,6 +167,7 @@ export default function RemindersScreen() {
         <Appbar.Header statusBarHeight={0}>
           <Appbar.BackAction onPress={() => { router.back() }} />
           <Appbar.Content title="Mes rappels" />
+          <Appbar.Action icon="information-outline" onPress={() => setInfoModalVisible(true)} />
         </Appbar.Header>
 
         <List.Section>
@@ -228,6 +234,34 @@ export default function RemindersScreen() {
         onDismiss={dismissSnackbar}>
         {snackbarText}
       </Snackbar>
+
+      <Portal>
+        <Dialog visible={infoModalVisible} onDismiss={() => setInfoModalVisible(false)}>
+          <Dialog.Title style={{ textAlign: 'center' }}>Informations</Dialog.Title>
+          <Dialog.ScrollArea style={{ paddingHorizontal: 24, maxHeight: 400 }}>
+            <ScrollView contentContainerStyle={{ paddingVertical: 8, gap: 12 }}>
+              <Text variant="bodyMedium">
+                Cette page vous permet de personnaliser l'horaire de vos notifications quotidiennes :
+              </Text>
+              <Text variant="bodyMedium">
+                • <Text style={{ fontWeight: 'bold' }}>Rappels questionnaire</Text> : Choisissez l'heure à laquelle recevoir la notification pour remplir le questionnaire chaque jour de la semaine.
+              </Text>
+              <Text variant="bodyMedium">
+                • <Text style={{ fontWeight: 'bold' }}>Rappels port du capteur</Text> : Choisissez l'heure de rappel pour penser à porter votre capteur d'activité.
+              </Text>
+              <Text variant="bodyMedium">
+                • <Text style={{ fontWeight: 'bold' }}>Plage horaire autorisée</Text> : Les heures de rappel doivent être programmées entre <Text style={{ fontWeight: 'bold' }}>05h00 et 13h00</Text>.
+              </Text>
+              <Text variant="bodyMedium">
+                • <Text style={{ fontWeight: 'bold' }}>Sauvegarde</Text> : Vos modifications sont enregistrées en local et automatiquement synchronisées avec le serveur.
+              </Text>
+            </ScrollView>
+          </Dialog.ScrollArea>
+          <Dialog.Actions>
+            <Button onPress={() => setInfoModalVisible(false)}>Compris</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </SafeAreaView>
   )
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Slot, useRouter } from 'expo-router'
+import { Stack, useRouter } from 'expo-router'
 import { PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper'
 import { useColorScheme } from 'react-native'
 import * as Notifications from 'expo-notifications'
@@ -148,7 +148,7 @@ export default function RootLayout() {
     <PaperProvider theme={theme}>
       <AuthProvider>
         <NotificationObserver />
-        <Slot />
+        <Stack screenOptions={{ headerShown: false }} />
       </AuthProvider>
     </PaperProvider>
   )

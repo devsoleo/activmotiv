@@ -4,11 +4,19 @@ import { Text, Divider, List, useTheme } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { useSession } from '@/contexts/auth'
+import { Buffer } from 'buffer'
 
 export default function SettingsScreen() {
   const theme = useTheme()
-  const { signOut } = useSession()
+  const { signOut, accessToken } = useSession()
   const router = useRouter()
+
+  let isAdmin = false
+  if (accessToken) {
+    try {
+      isAdmin = !!JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())['admin']
+    } catch {}
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -26,6 +34,16 @@ export default function SettingsScreen() {
         left={props => <List.Icon {...props} icon="bell-outline" />}
       />
       <Divider />
+      {isAdmin && (
+        <>
+          <List.Item
+            onPress={() => router.push("./(settings)/admin")}
+            title={<Text variant="titleMedium" style={styles.menu}>Administration</Text>}
+            left={props => <List.Icon {...props} icon="shield-crown-outline" />}
+          />
+          <Divider />
+        </>
+      )}
       <List.Item
         onPress={() => router.push("./(settings)/permissions")}
         title={<Text variant="titleMedium" style={styles.menu}>{"Permissions"}</Text>}

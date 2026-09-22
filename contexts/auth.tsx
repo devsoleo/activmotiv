@@ -4,17 +4,18 @@ import { useStorageState } from './useStorageState'
 import { useRouter } from 'expo-router'
 
 import { setSignOut } from './authManager'
+import { clearAllCaches } from '@/services/storage'
 import { Alert } from 'react-native'
 
 type AuthContextType = {
   signIn: (accessToken: string) => void
-  signOut: () => void
+  signOut: () => Promise<void> | void
   accessToken: string | null
 }
 
 const AuthContext = createContext<AuthContextType>({
-  signIn: (accessToken: string) => null,
-  signOut: () => null,
+  signIn: (accessToken: string) => {},
+  signOut: () => {},
   accessToken: null
 })
 
@@ -37,13 +38,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
       signIn: (accessToken: string) => {
         setAccessToken(accessToken)
       },
-      signOut: () => {
+      signOut: async () => {
+        await clearAllCaches()
         setAccessToken(null)
         router.replace('/(auth)/login')
       },
       accessToken,
     }),
-    [accessToken]
+    [accessToken, setAccessToken, router]
   )
 
   useEffect(() => {

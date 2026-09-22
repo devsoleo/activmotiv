@@ -150,7 +150,14 @@ export default function OnboardingScreen() {
   const handleConfirmTime = ({ hours, minutes }: { hours: number; minutes: number }) => {
     if (!activePicker) return
 
-    if (hours < 5 || hours > 13 || (hours === 13 && minutes > 0)) {
+    let isAdmin = false
+    if (accessToken) {
+      try {
+        isAdmin = !!JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())['admin']
+      } catch {}
+    }
+
+    if (!isAdmin && (hours < 5 || hours > 13 || (hours === 13 && minutes > 0))) {
       setActivePicker(null)
       setSnackbarText("L'heure de rappel doit être comprise entre 05h00 et 13h00.")
       setSnackbarVisible(true)

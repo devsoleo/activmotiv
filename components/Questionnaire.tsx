@@ -1,8 +1,7 @@
 import { useState, useRef, createRef, ReactNode } from 'react'
 import { View, StyleSheet, ScrollView } from 'react-native'
-import { Text, Button, Card, RadioButton, useTheme } from 'react-native-paper'
+import { Text, Button, Card, RadioButton, useTheme, IconButton, Portal, Dialog } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import InformationFrame from './InformationFrame'
 
 export interface QuestionnaireItem {
   uid: string
@@ -17,13 +16,13 @@ export interface QuestionnaireItem {
 export interface QuestionnaireProps {
   title: string
   list: QuestionnaireItem[]
-  infos: ReactNode
   onSubmit: (results: Array<{ question: string; answer: any }>) => void
 }
 
-export default function Questionnaire({ title, list, infos, onSubmit }: QuestionnaireProps) {
+export default function Questionnaire({ title, list, onSubmit }: QuestionnaireProps) {
   const theme = useTheme()
   const [hasSubmit, setHasSubmit] = useState(false)
+  const [infoModalVisible, setInfoModalVisible] = useState(true)
 
   const size = list.length
 
@@ -53,9 +52,18 @@ export default function Questionnaire({ title, list, infos, onSubmit }: Question
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <Text variant="headlineLarge" style={[styles.title, { color: theme.colors.onBackground }]}>{title}</Text>
-
-      <InformationFrame actionName="Commencer le questionnaire" content={infos} />
+      <View style={styles.headerContainer}>
+        <View style={styles.headerSide} />
+        <Text variant="headlineLarge" style={[styles.title, { color: theme.colors.onBackground }]}>{title}</Text>
+        <View style={styles.headerSide}>
+          <IconButton
+            icon="information-outline"
+            size={24}
+            iconColor={theme.colors.primary}
+            onPress={() => setInfoModalVisible(true)}
+          />
+        </View>
+      </View>
 
       <ScrollView ref={scrollViewRef}>
         {list.map((item, index) => {
@@ -111,6 +119,48 @@ export default function Questionnaire({ title, list, infos, onSubmit }: Question
           onSubmit(formattedResults)
         }}>Valider mes réponses</Button>
       </View>
+
+      <Portal>
+        <Dialog visible={infoModalVisible} onDismiss={() => setInfoModalVisible(false)}>
+          <Dialog.Title style={{ textAlign: 'center' }}>Informations</Dialog.Title>
+          <Dialog.ScrollArea style={{ paddingHorizontal: 24, maxHeight: 400 }}>
+            <ScrollView contentContainerStyle={{ paddingVertical: 8, gap: 12 }}>
+              <Text variant="bodyMedium">
+                Ce questionnaire évalue vos perceptions et vos intentions relatives à l'activité physique :
+              </Text>
+              <Text variant="bodyMedium">
+                • <Text style={{ fontWeight: 'bold' }}>Instructions</Text> : Lisez chaque proposition attentivement et sélectionnez une valeur sur l'échelle numérique.
+              </Text>
+              <Text variant="bodyMedium">
+                • <Text style={{ fontWeight: 'bold' }}>Échelle de réponse</Text> : Les termes à chaque extrémité indiquent le niveau minimum (1) et maximum (7) d'accord ou de ressenti.
+              </Text>
+                <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>
+                  Lisez attentivement chaque phrase et répondez sur l'échelle située en dessous en sélectionnant un nombre correspondant le mieux à ce que vous pensez.
+                </Text>
+      
+                <View
+                  style={[
+                    styles.quoteContainer,
+                    {
+                      backgroundColor: theme.colors.surfaceVariant,
+                      borderLeftColor: theme.colors.primary
+                    }
+                  ]}
+                >
+                  <Text variant="bodyMedium" style={[styles.quoteText, { color: theme.colors.onSurfaceVariant }]}>
+                    « L’activité physique se réfère à tout mouvement corporel produit par les muscles squelettiques qui requiert une dépense d’énergie. L’activité physique désigne tous les mouvements que l’on effectue notamment dans le cadre des loisirs, pour se déplacer d’un endroit à l’autre, sur le lieu de travail ou lors des tâches ménagères. »
+                  </Text>
+                  <Text variant="labelMedium" style={[styles.quoteSource, { color: theme.colors.primary }]}>
+                    — OMS, 2024
+                  </Text>
+                </View>
+            </ScrollView>
+          </Dialog.ScrollArea>
+          <Dialog.Actions>
+            <Button onPress={() => setInfoModalVisible(false)}>Compris</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </SafeAreaView>
   )
 }
@@ -185,7 +235,17 @@ const QuestionCard = ({ question, globalIndex, globalSize, hasSubmit, sectionRef
 }
 
 const styles = StyleSheet.create({
-  title: { textAlign: 'center', paddingVertical: 12, fontWeight: "bold" },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+  },
+  headerSide: {
+    width: 48,
+    alignItems: 'center',
+  },
+  title: { flex: 1, textAlign: 'center', paddingVertical: 12, fontWeight: "bold" },
   answersContainer: {
     width: '100%',
     paddingHorizontal: 4,
@@ -219,5 +279,20 @@ const styles = StyleSheet.create({
   radioItem: {
     alignItems: 'center',
     justifyContent: 'center'
+  },
+  quoteContainer: {
+    padding: 14,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    marginVertical: 4
+  },
+  quoteText: {
+    fontStyle: 'italic',
+    lineHeight: 20
+  },
+  quoteSource: {
+    fontWeight: 'bold',
+    textAlign: 'right',
+    marginTop: 8
   }
 })

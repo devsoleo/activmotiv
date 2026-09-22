@@ -1,11 +1,11 @@
-let signOutFn: (() => void) | null = null
+let signOutFn: (() => void | Promise<void>) | null = null
 
-export const setSignOut = (fn: () => void) => {
+export const setSignOut = (fn: () => void | Promise<void>) => {
   signOutFn = fn
 }
 
-export const callSignOut = () => {
+export const callSignOut = async () => {
   if (signOutFn) {
-    signOutFn()
+    await signOutFn()
   }
 }

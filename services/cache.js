@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+export { clearAllCaches } from './storage'
 
 // Raw
 // C U D
