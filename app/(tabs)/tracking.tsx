@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView, AppState, AppStateStatus, Dimensions } from 'react-native'
+import { View, StyleSheet, ScrollView, AppState, AppStateStatus, Dimensions, Linking } from 'react-native'
 import { Text, Card, Button, useTheme, Icon, IconButton, Portal, Dialog } from 'react-native-paper'
 import { BarChart } from "react-native-gifted-charts"
 import { useCallback, useState } from 'react'
@@ -484,6 +484,15 @@ export default function TrackingScreen() {
               </Text>
               <Text variant="bodyMedium">
                 • <Text style={{ fontWeight: 'bold' }}>Graphique</Text> : Visualisez l'évolution quotidienne de vos expositions au fil de la semaine.
+              </Text>
+              <Text variant="bodyMedium">
+                • <Text style={{ fontWeight: 'bold' }}>Notice d'utilisation du capteur</Text> :{' '}
+                <Text
+                  style={{ color: theme.colors.primary, textDecorationLine: 'underline' }}
+                  onPress={() => Linking.openURL('https://activmotiv.fr/static/documents/Notice_ActiGraph.pdf?key=b4b01d6c7472362a30ac5470aac7f6be')}
+                >
+                  Consulter la notice ActiGraph
+                </Text>
               </Text>
             </ScrollView>
           </Dialog.ScrollArea>

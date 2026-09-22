@@ -63,16 +63,7 @@ class ImagesActivity : ComponentActivity() {
     private fun showOverlayPermissionDialog() {
         val isXiaomi = android.os.Build.MANUFACTURER.equals("Xiaomi", ignoreCase = true)
         
-        val message = if (isXiaomi) {
-            "Pour afficher les images de motivation, ActivMotiv nécessite l'autorisation d'affichage par-dessus les autres applications.\n\n" +
-            "⚠️ IMPORTANT (Appareil Xiaomi/Redmi) :\n" +
-            "Vous devez ÉGALEMENT activer les options suivantes dans le menu \"Autres autorisations\" de l'application :\n" +
-            "• Afficher les fenêtres pop-up en arrière-plan\n" +
-            "• Afficher sur l'écran de verrouillage\n\n" +
-            "Souhaitez-vous ouvrir les paramètres maintenant ?"
-        } else {
-            "Pour afficher les images de motivation, ActivMotiv nécessite l'autorisation d'affichage par-dessus les autres applications. Souhaitez-vous l'activer maintenant ?"
-        }
+        val message = "Pour afficher les images, ActivMotiv nécessite l'autorisation d'affichage par-dessus les autres applications. Souhaitez-vous l'activer maintenant ?"
 
         AlertDialog.Builder(this)
             .setTitle("Permissions requises")

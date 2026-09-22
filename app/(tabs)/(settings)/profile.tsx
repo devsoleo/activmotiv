@@ -99,6 +99,9 @@ export default function Profile() {
             if (response.status === 200) {
               setSnackbarText('Votre mot de passe a bien été modifié !')
               setVisible(true)
+              setCurrentPassword('')
+              setNewPassword('')
+              setConfirmPassword('')
             } else {
               setSnackbarText('Une erreur est survenue !')
               setVisible(true)

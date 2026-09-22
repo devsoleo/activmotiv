@@ -20,31 +20,54 @@ export default function AdminScreen() {
     else setLoadingQuestionnaire(true)
 
     try {
-      // 1. Verify admin rights with the API
+      // 1. Sync device push token with backend before triggering admin notification
+      try {
+        const pushToken = await Notifications.getDevicePushTokenAsync()
+        if (pushToken?.data) {
+          await api.put('/notifications/token', { fcmToken: pushToken.data })
+        }
+      } catch (tokenErr) {
+        console.warn("Unable to sync push token before test notification:", tokenErr)
+      }
+
+      // 2. Request backend to send real FCM notification (same system as automated crons)
       const res = await api.post('/admin/notifications/send', { type })
 
       if (res.status === 200 && res.data) {
         const notifData = res.data.notification || {}
+        const fcmStats = res.data.fcm || {}
         const isSensor = type === 'SENSOR'
-        const title = notifData.title || (isSensor ? 'Rappel port du capteur' : 'Rappel questionnaire')
-        const body = notifData.body || (isSensor
-          ? "Bonjour, pensez à mettre le capteur à la taille aujourd'hui. Merci !"
-          : "C'est l'heure de remplir votre questionnaire !")
-        const url = notifData.url || (isSensor ? '/(sensor)' : '/(questionnaires)')
 
-        // 2. Trigger instant local demo notification on this device
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title,
-            body,
-            data: { type, url },
-          },
-          trigger: null,
-        })
+        if (fcmStats.successCount > 0) {
+          setSnackbarText(`Notification ${isSensor ? 'capteur' : 'questionnaire'} envoyée via le serveur (${fcmStats.successCount} appareil reçu) !`)
+        } else {
+          // Fallback if device token wasn't registered/active on FCM
+          const title = notifData.title || (isSensor ? 'Rappel port du capteur' : 'Rappel questionnaire')
+          const body = notifData.body || (isSensor
+            ? "Bonjour, pensez à mettre le capteur à la taille aujourd'hui. Merci !"
+            : "C'est l'heure de remplir votre questionnaire !")
+          const url = notifData.url || (isSensor ? '/(sensor)' : '/(questionnaires)')
+          const channelId = notifData.channelId || (isSensor ? 'sensor' : 'questionnaire')
+          const color = notifData.color || (isSensor ? '#EF5350' : '#29B6F6')
+          const imageUrl = notifData.imageUrl || (isSensor
+            ? 'https://activmotiv.fr/static/notifications/sensor.png?key=b4b01d6c7472362a30ac5470aac7f6be'
+            : 'https://activmotiv.fr/static/notifications/ema.png?key=b4b01d6c7472362a30ac5470aac7f6be')
 
-        setSnackbarText(`Notification de démo (${isSensor ? 'capteur' : 'questionnaire'}) déclenchée sur ce téléphone !`)
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title,
+              body,
+              data: { type, url },
+              attachments: imageUrl ? [{ identifier: 'image', url: imageUrl, type: 'image/png' }] : [],
+              ...(channelId ? { android: { channelId, color } } : {}),
+            },
+            trigger: null,
+          })
+
+          setSnackbarText(`Notification locale de secours déclenchée (aucun jeton FCM actif trouvé).`)
+        }
       } else {
-        setSnackbarText(`Erreur lors de la vérification de la notification.`)
+        setSnackbarText(`Erreur lors de l'envoi de la notification.`)
       }
     } catch (e: any) {
       console.error(`Failed to send ${type} notification:`, e)
