@@ -104,22 +104,22 @@ export default function PermissionsScreen() {
             <Text style={[styles.guideText, { backgroundColor: theme.colors.surfaceVariant, color: theme.colors.onSurfaceVariant }]}>
               {"👉 Comment l'activer : Dans les paramètres de votre téléphone ou de l'application, activez l'option 'Démarrage automatique' (ou 'Auto-start' / 'Lancement automatique en arrière-plan')."}
             </Text>
-          </Card.Content>
-        </Card>
+            </Card.Content>
+          </Card>
+        </ScrollView>
 
-        <Divider style={{ marginVertical: 12, backgroundColor: theme.colors.outlineVariant }} />
-
-        <Button 
-          mode="contained" 
-          onPress={handleOpenSettings} 
-          style={[styles.settingsButton, { backgroundColor: theme.colors.primary }]}
-          icon="cog"
-          labelStyle={{ fontWeight: 'bold', fontSize: 15, color: theme.colors.onPrimary }}
-        >
-          {"Ouvrir les Paramètres d'ActivMotiv"}
-        </Button>
-      </ScrollView>
-    </SafeAreaView>
+        <View style={[styles.bottomFooter, { backgroundColor: theme.colors.background, borderTopColor: theme.colors.outlineVariant }]}>
+          <Button 
+            mode="contained" 
+            onPress={handleOpenSettings} 
+            style={[styles.settingsButton, { backgroundColor: theme.colors.primary }]}
+            icon="cog"
+            labelStyle={{ fontWeight: 'bold', fontSize: 15, color: theme.colors.onPrimary }}
+          >
+            {"Ouvrir les Paramètres d'ActivMotiv"}
+          </Button>
+        </View>
+      </SafeAreaView>
   )
 }
 
@@ -179,8 +179,12 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     textAlign: 'justify'
   },
+  bottomFooter: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
   settingsButton: {
-    marginTop: 12,
     paddingVertical: 6,
     borderRadius: 24,
   }
