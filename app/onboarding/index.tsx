@@ -153,7 +153,8 @@ export default function OnboardingScreen() {
     let isAdmin = false
     if (accessToken) {
       try {
-        isAdmin = !!JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())['admin']
+        const payload = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())
+        isAdmin = payload['team'] === 0 || !!payload['admin']
       } catch {}
     }
 

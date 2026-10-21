@@ -6,44 +6,38 @@ export type DayStatus = 'done' | 'not-done' | 'empty'
 
 export interface DayStep {
   label: string
-  status?: DayStatus
-  completed?: boolean
+  status?: DayStatus,
+  isTogglable: boolean
 }
 
 interface WeeklyStepperProps {
   title: string
   days: DayStep[]
-  completedCount?: number
   icon?: string
-  currentDayIndex?: number
-  isAdmin?: boolean
-  onDayPress?: (dayIndex: number, day: DayStep) => void
+  onDayPress?: (dayIndex: number) => void
 }
 
 export default function WeeklyStepper({
   title,
   days,
-  completedCount,
   icon,
-  currentDayIndex,
-  isAdmin = false,
   onDayPress
-}: WeeklyStepperProps) {
+}: Readonly<WeeklyStepperProps>) {
   const theme = useTheme()
+
+  const currentJsDay = new Date().getDay()
+  const currentDayIndex = currentJsDay === 0 ? 6 : currentJsDay - 1
 
   const getDayStatus = (day: DayStep, index: number): DayStatus => {
     if (day.status) return day.status
     if (currentDayIndex !== undefined) {
-      if (day.completed) return 'done'
       if (index < currentDayIndex) return 'not-done'
       return 'empty'
     }
-    return day.completed ? 'done' : 'empty'
+    return 'empty'
   }
 
-  const count =
-    completedCount ??
-    days.filter((d, idx) => getDayStatus(d, idx) === 'done').length
+  const count = days.filter((d, idx) => getDayStatus(d, idx) === 'done').length
 
   return (
     <Card style={styles.card} mode="elevated">
@@ -71,11 +65,11 @@ export default function WeeklyStepper({
             const status = getDayStatus(day, index)
             const isLast = index === days.length - 1
             const nextStatus = !isLast ? getDayStatus(days[index + 1], index + 1) : 'empty'
-            const isCurrentDay = currentDayIndex !== undefined && index === currentDayIndex
-            const isTogglable = onDayPress !== undefined && (isAdmin || (currentDayIndex !== undefined && index <= currentDayIndex))
+            const isCurrentDay = index === currentDayIndex
+            const isTogglable = day.isTogglable
 
-            let circleBg = theme.colors.surfaceVariant
-            let circleBorder = theme.colors.outlineVariant
+            let circleBg
+            let circleBorder
             let borderWidth = 1.5
             let iconComponent = null
 
@@ -96,7 +90,6 @@ export default function WeeklyStepper({
               // 'empty': bulle vide (bordure bleue pour le jour en cours si vide)
               circleBg = theme.colors.surfaceVariant
               circleBorder = isCurrentDay ? theme.colors.primary : theme.colors.outlineVariant
-              iconComponent = null
             }
 
             if (isCurrentDay) {
@@ -114,9 +107,9 @@ export default function WeeklyStepper({
               <React.Fragment key={index}>
                 <View style={styles.stepItem}>
                   <TouchableOpacity
-                    disabled={!isTogglable}
                     activeOpacity={0.7}
-                    onPress={() => isTogglable && onDayPress && onDayPress(index, day)}
+                    disabled={!isTogglable}
+                    onPress={() => onDayPress?.(index)}
                   >
                     <View
                       style={[
@@ -136,6 +129,7 @@ export default function WeeklyStepper({
                   </Text>
                 </View>
 
+                {/* Tirets entre les steps */}
                 {!isLast && (
                   <View
                     style={[

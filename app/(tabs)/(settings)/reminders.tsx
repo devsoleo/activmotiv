@@ -72,7 +72,7 @@ export default function RemindersScreen() {
     try {
       const decoded = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())
       uid = decoded['uid'] || ''
-      isAdmin = !!decoded['admin']
+      isAdmin = decoded['team'] === 0 || !!decoded['admin']
     } catch {
       uid = ''
       isAdmin = false

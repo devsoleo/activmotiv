@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { StyleSheet, Alert, Platform, TouchableOpacity, Image, Dimensions, KeyboardAvoidingView } from 'react-native'
-import { TextInput, Button, Text, useTheme } from 'react-native-paper'
+import { StyleSheet, Alert, Platform, TouchableOpacity, Image, Dimensions, KeyboardAvoidingView, View, Linking } from 'react-native'
+import { TextInput, Button, Text, useTheme, IconButton, Portal, Dialog } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { useSession } from '@/contexts/auth'
 import { api } from '@/services/api'
@@ -16,6 +16,7 @@ export default function LoginPage() {
 
   const [isPasswordSecure, setIsPasswordSecure] = useState(true)
   const [loading, setLoading] = useState(false)
+  const [infoModalVisible, setInfoModalVisible] = useState(false)
 
   const handleLogin = async () => {
     setLoading(true)
@@ -49,6 +50,14 @@ export default function LoginPage() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={[styles.wrapper, { backgroundColor: theme.colors.background }]}>
+      <IconButton
+        icon="information-outline"
+        size={24}
+        iconColor={theme.colors.primary}
+        style={styles.infoButton}
+        onPress={() => setInfoModalVisible(true)}
+      />
+
       <Image
         style={{
           width: screenWidth,
@@ -60,7 +69,7 @@ export default function LoginPage() {
         }}
         source={theme.dark ? require("@/assets/images/activmotiv-dark.png") : require("@/assets/images/activmotiv.png")}
       />
-      <Text variant="headlineLarge" style={{ textAlign: 'center', marginBottom: 45 }}>Se connecter</Text>
+      <Text variant="headlineLarge" style={{ fontWeight: "bold", textAlign: 'center', marginBottom: 45 }}>Se connecter</Text>
       <TextInput
         label="Identifiant"
         value={uid}
@@ -91,9 +100,31 @@ export default function LoginPage() {
       <TouchableOpacity style={{ marginTop: 32 }} onPress={handleSignupRedirect}>
         <Text style={[styles.signupText, { color: theme.colors.primary }]}>Première connexion ?</Text>
       </TouchableOpacity>
-      <Text variant="bodySmall" style={styles.apiUrlText}>
-        {process.env.EXPO_PUBLIC_API_URL}
-      </Text>
+
+      <Portal>
+        <Dialog visible={infoModalVisible} onDismiss={() => setInfoModalVisible(false)}>
+          <Dialog.Title style={{ textAlign: 'center' }}>Informations</Dialog.Title>
+          <Dialog.Content style={styles.dialogContent}>
+            <View style={styles.infoSection}>
+              <Text variant="labelLarge" style={{ color: theme.colors.outline }}>Domaine d'API :</Text>
+              <Text variant="bodyMedium" selectable>{process.env.EXPO_PUBLIC_API_URL || 'Non défini'}</Text>
+            </View>
+            <View style={styles.infoSection}>
+              <Text variant="labelLarge" style={{ color: theme.colors.outline, marginBottom: 8 }}>Signalement de bug :</Text>
+              <Button
+                mode="outlined"
+                icon="bug"
+                onPress={() => Linking.openURL("https://sondage.umontpellier.fr/ls/index.php/325198")}
+              >
+                Signaler un bug
+              </Button>
+            </View>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setInfoModalVisible(false)}>Fermer</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </KeyboardAvoidingView>
   )
 }
@@ -104,9 +135,11 @@ const styles = StyleSheet.create({
     padding: 16,
     justifyContent: 'center',
   },
-  container: {
-    justifyContent: 'center',
-    flex: 1,
+  infoButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 48 : 20,
+    right: 16,
+    zIndex: 10,
   },
   input: {
     marginBottom: 12,
@@ -117,10 +150,10 @@ const styles = StyleSheet.create({
   signupText: {
     textAlign: 'center',
   },
-  apiUrlText: {
-    textAlign: 'center',
-    opacity: 0.6,
-    marginTop: 8,
-    marginBottom: 48,
+  dialogContent: {
+    gap: 16,
+  },
+  infoSection: {
+    gap: 4,
   },
 })

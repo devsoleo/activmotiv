@@ -22,12 +22,12 @@ export function syncWithServer() {
   })
 }
 
-export function syncSteppersWithServer() {
-  return api.get('/analytics/steppers')
+export function syncSteppersWithServer(type) {
+  return api.get(`/analytics/steppers/${type}`)
     .then((response) => response.data)
     .then(async (data) => {
       if (data) {
-        await setItem('tracking', 'steppers', data)
+        await setItem('tracking', `${type}_steppers`, data)
       }
       return data
     })

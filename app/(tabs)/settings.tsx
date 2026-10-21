@@ -4,7 +4,6 @@ import { Text, Divider, List, useTheme } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { useSession } from '@/contexts/auth'
-import { Buffer } from 'buffer'
 
 export default function SettingsScreen() {
   const theme = useTheme()
@@ -14,7 +13,8 @@ export default function SettingsScreen() {
   let isAdmin = false
   if (accessToken) {
     try {
-      isAdmin = !!JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())['admin']
+      const payload = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())
+      isAdmin = payload['team'] === 0
     } catch {}
   }
 
@@ -69,7 +69,7 @@ export default function SettingsScreen() {
       />
       <Divider />
       <List.Item
-        onPress={() => Linking.openURL("https://sondage.umontpellier.fr/ls/index.php/325198?newtest=Y&lang=fr&uid=81fbdec3")}
+        onPress={() => Linking.openURL("https://sondage.umontpellier.fr/ls/index.php/325198")}
         title={<Text variant="titleMedium" style={styles.menu}>Signaler un bug</Text>}
         left={props => <List.Icon {...props} icon="bug" />}
       />

@@ -1,22 +1,23 @@
 import { View, StyleSheet, ScrollView, AppState, AppStateStatus, Dimensions, Linking } from 'react-native'
-import { Text, Card, Button, useTheme, Icon, IconButton, Portal, Dialog } from 'react-native-paper'
+import { Text, Button, useTheme,  IconButton, Portal, Dialog } from 'react-native-paper'
 import { BarChart } from "react-native-gifted-charts"
 import { useCallback, useState } from 'react'
-import { useRouter, useFocusEffect } from 'expo-router'
+import { useFocusEffect } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Buffer } from 'buffer'
 import { useSession } from '@/contexts/auth'
 import * as Notifications from 'expo-notifications'
 import * as Device from 'expo-device'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { api } from '@/services/api'
-import { getTrackingItem, syncWithServer, getCachedSteppers, syncSteppersWithServer } from '@/services/cache/tracking'
+import { getTrackingItem, syncWithServer, syncSteppersWithServer } from '@/services/cache/tracking'
 import { getCachedQuestionnaireStatus, syncQuestionnaireStatusWithServer } from '@/services/cache/questionnaires'
 import Task from '@/components/Task'
-import WeeklyStepper, { DayStep, DayStatus } from '@/components/WeeklyStepper'
+import WeeklyStepper, { DayStep } from '@/components/SensorStepper'
+import QuestionnaireStepper from '@/components/QuestionnaireStepper'
 
 function formatDuration(totalMilliseconds: number | null | undefined): string {
-  if (totalMilliseconds == null || isNaN(totalMilliseconds) || totalMilliseconds <= 0) return '0s'
+  if (totalMilliseconds == null || Number.isNaN(totalMilliseconds) || totalMilliseconds <= 0) return '0s'
+
   const totalSeconds = Math.floor(totalMilliseconds / 1000)
   const d = Math.floor(totalSeconds / (3600 * 24))
   const h = Math.floor((totalSeconds % (3600 * 24)) / 3600)
@@ -26,17 +27,11 @@ function formatDuration(totalMilliseconds: number | null | undefined): string {
   const parts: string[] = []
 
   if (d > 0) {
-    parts.push(`${d}j`)
-    parts.push(`${h}h`)
-    parts.push(`${m}m`)
-    parts.push(`${s}s`)
+    parts.push(`${d}j`, `${h}h`, `${m}m`, `${s}s`)
   } else if (h > 0) {
-    parts.push(`${h}h`)
-    parts.push(`${m}m`)
-    parts.push(`${s}s`)
+    parts.push(`${h}h`, `${m}m`, `${s}s`)
   } else if (m > 0) {
-    parts.push(`${m}m`)
-    parts.push(`${s}s`)
+    parts.push(`${m}m`, `${s}s`)
   } else {
     parts.push(`${s}s`)
   }
@@ -44,132 +39,71 @@ function formatDuration(totalMilliseconds: number | null | undefined): string {
   return parts.join(' ')
 }
 
-function formatNextQuestionnaireDate(dateStr: string | null): string | null {
-  if (!dateStr) return null
-  try {
-    const date = new Date(dateStr)
-    if (isNaN(date.getTime())) return null
-    const formatted = date.toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    })
-    return formatted.charAt(0).toUpperCase() + formatted.slice(1)
-  } catch {
-    return null
-  }
-}
-
 export default function TrackingScreen() {
   const theme = useTheme()
-  const router = useRouter()
   const { accessToken } = useSession()
   const { width: screenWidth } = Dimensions.get('window')
 
   let isAdmin = false
   if (accessToken) {
     try {
-      isAdmin = !!JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())['admin']
+      const payload = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())
+      isAdmin = payload['team'] === 0
     } catch {}
   }
-  
+
   // States pour le suivi
   const [barData, setBarData] = useState<any[]>([])
   const [openingAmount, setOpeningAmount] = useState<number>(0)
   const [exposureDuration, setExposureDuration] = useState<number>(0)
   const [infoModalVisible, setInfoModalVisible] = useState<boolean>(false)
-  
+
   // State pour les questionnaires
   const [displayQuestionnaire, setDisplayQuestionnaire] = useState<boolean>(false)
 
   // States pour les steppers
-  const currentJsDay = new Date().getDay()
-  const currentDayIndex = currentJsDay === 0 ? 6 : currentJsDay - 1
-
   const defaultDays: DayStep[] = ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((label, idx) => ({
     label,
-    status: idx < currentDayIndex ? 'not-done' : 'empty',
-    completed: false
+    status: 'empty',
+    isTogglable: false
   }))
-  const [questionnairesDays, setQuestionnairesDays] = useState<DayStep[]>(defaultDays)
-  const [questionnairesCount, setQuestionnairesCount] = useState<number>(0)
+
+  const defaultFormDays: DayStep[] = ['J1', 'J2', 'J3', 'J4', 'J5', 'J6', 'J7'].map((label, idx) => ({
+    label,
+    status: 'empty',
+    isTogglable: false
+  }))
+
   const [sensorDays, setSensorDays] = useState<DayStep[]>(defaultDays)
-  const [sensorCount, setSensorCount] = useState<number>(0)
-  const [inActivePhase, setInActivePhase] = useState<boolean>(false)
-  const [nextQuestionnaireDate, setNextQuestionnaireDate] = useState<string | null>(null)
+  const [formDays, setFormDays] = useState<DayStep[]>(defaultFormDays)
 
   // Chargement des steppers
-  const getSteppersData = async () => {
+  const getSensorSteppersData = async () => {
     try {
-      const cached = await getCachedSteppers()
-      if (cached) {
-        if (cached.questionnaires) setQuestionnairesDays(cached.questionnaires)
-        if (cached.sensor) setSensorDays(cached.sensor)
-        if (cached.questionnairesCount !== undefined) setQuestionnairesCount(cached.questionnairesCount)
-        if (cached.sensorCount !== undefined) setSensorCount(cached.sensorCount)
-        if (typeof cached.inActivePhase === 'boolean') setInActivePhase(cached.inActivePhase)
-        if (cached.nextQuestionnaireDate !== undefined) setNextQuestionnaireDate(cached.nextQuestionnaireDate)
-      }
-    } catch (e) {
-      console.error("Failed to load steppers from cache:", e)
-    }
+      const data = await syncSteppersWithServer('sensor')
 
-    try {
-      const data = await syncSteppersWithServer()
-      if (data) {
-        if (data.questionnaires) setQuestionnairesDays(data.questionnaires)
-        if (data.sensor) setSensorDays(data.sensor)
-        if (data.questionnairesCount !== undefined) setQuestionnairesCount(data.questionnairesCount)
-        if (data.sensorCount !== undefined) setSensorCount(data.sensorCount)
-        if (typeof data.inActivePhase === 'boolean') setInActivePhase(data.inActivePhase)
-        if (data.nextQuestionnaireDate !== undefined) setNextQuestionnaireDate(data.nextQuestionnaireDate)
-      }
+      if (data?.days) setSensorDays(data.days)
     } catch (e) {
       console.error("Failed to sync steppers with server:", e)
     }
   }
 
-  // Toggle du port du capteur pour un jour (passé ou présent, ou futur si admin)
-  const handleToggleSensorDay = async (dayIndex: number) => {
-    if (!isAdmin && dayIndex > currentDayIndex) return
-
-    setSensorDays(prev => {
-      const updated = [...prev]
-      const target = updated[dayIndex]
-      const isCurrentlyDone = target.status === 'done' || target.completed
-
-      let newStatus: DayStatus = 'empty'
-      if (!isCurrentlyDone) {
-        newStatus = 'done'
-      } else {
-        newStatus = dayIndex < currentDayIndex ? 'not-done' : 'empty'
-      }
-
-      updated[dayIndex] = {
-        ...target,
-        status: newStatus,
-        completed: newStatus === 'done'
-      }
-      return updated
-    })
-
-    setSensorCount(prev => {
-      const target = sensorDays[dayIndex]
-      const isCurrentlyDone = target.status === 'done' || target.completed
-      return isCurrentlyDone ? Math.max(0, prev - 1) : prev + 1
-    })
-
+  const getFormSteppersData = async () => {
     try {
-      await api.post('/sensor/toggle', { dayIndex })
-      const data = await syncSteppersWithServer()
-      if (data) {
-        if (data.sensor) setSensorDays(data.sensor)
-        if (data.sensorCount !== undefined) setSensorCount(data.sensorCount)
-      }
+      const data = await syncSteppersWithServer('form')
+
+      if (data?.days) setFormDays(data.days)
     } catch (e) {
-      console.error("Failed to toggle sensor for day:", dayIndex, e)
-      getSteppersData()
+      console.error("Failed to sync steppers with server:", e)
+    }
+  }
+
+  const handleToggleSensorDay = async (stepDayIndex: number) => {
+    try {
+      await api.post('/sensor/toggle', { weekDayIndex: stepDayIndex })
+      await getSensorSteppersData()
+    } catch (e) {
+      console.error("Error :", stepDayIndex, e)
     }
   }
 
@@ -281,18 +215,21 @@ export default function TrackingScreen() {
     useCallback(() => {
       getTracking()
       getQuestionnairesAndTelemetry()
-      getSteppersData()
+      getSensorSteppersData()
+      getFormSteppersData()
 
       const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
         if (nextAppState === 'active') {
           getTracking()
           getQuestionnairesAndTelemetry()
-          getSteppersData()
+          getSensorSteppersData()
+          getFormSteppersData()
           
           const timer = setTimeout(() => {
             getTracking()
             getQuestionnairesAndTelemetry()
-            getSteppersData()
+            getSensorSteppersData()
+            getFormSteppersData()
           }, 800)
 
           return () => clearTimeout(timer)
@@ -348,44 +285,22 @@ export default function TrackingScreen() {
           Progression cette semaine
         </Text>
 
-        {inActivePhase || isAdmin ? (
-          <WeeklyStepper
-            title="Questionnaire journalier"
-            days={questionnairesDays}
-            completedCount={questionnairesCount}
+        {isAdmin ? (
+          <QuestionnaireStepper
+            title="Questionnaire quotidien"
+            days={formDays}
             icon="clipboard-check-outline"
-            currentDayIndex={currentDayIndex}
-            isAdmin={isAdmin}
           />
         ) : (
-          <Card style={styles.card} mode="elevated">
-            <Card.Content style={styles.nextQuestionnaireCardContent}>
-              <View style={[styles.nextQuestionnaireIconWrapper, { backgroundColor: theme.colors.primaryContainer }]}>
-                <Icon source="clipboard-clock-outline" size={20} color={theme.colors.primary} />
-              </View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text variant="titleMedium" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>
-                  Questionnaire journalier
-                </Text>
-                <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: 2 }}>
-                  {(() => {
-                    const formatted = nextQuestionnaireDate ? formatNextQuestionnaireDate(nextQuestionnaireDate) : null
-                    const fallback = formatNextQuestionnaireDate(new Date(Date.now() + 86400000).toISOString())
-                    return `Prochain questionnaire le ${formatted || fallback}`
-                  })()}
-                </Text>
-              </View>
-            </Card.Content>
-          </Card>
+          <View style={styles.card}>
+            <Text>Prochain questionnaire le </Text>
+          </View>
         )}
 
         <WeeklyStepper
           title="Port du capteur"
           days={sensorDays}
-          completedCount={sensorCount}
           icon="walk"
-          currentDayIndex={currentDayIndex}
-          isAdmin={isAdmin}
           onDayPress={handleToggleSensorDay}
         />
 

@@ -116,7 +116,7 @@ export default function Profile() {
         </Button>
       </ScrollView>
 
-      <Button onPress={() => Linking.openURL('https://sondage.umontpellier.fr/ls/index.php/636317?lang=fr')} textColor="#EF5350" style={{ marginHorizontal: 16 }}>
+      <Button onPress={() => Linking.openURL('https://sondage.umontpellier.fr/ls/index.php/636317')} textColor="#EF5350" style={{ marginHorizontal: 16 }}>
         Supprimer mon compte
       </Button>
 
