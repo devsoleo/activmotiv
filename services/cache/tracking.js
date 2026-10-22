@@ -23,7 +23,7 @@ export function syncWithServer() {
 }
 
 export function syncSteppersWithServer(type) {
-  return api.get(`/analytics/steppers/${type}`)
+  return api.get(`/${type}/stepper`)
     .then((response) => response.data)
     .then(async (data) => {
       if (data) {

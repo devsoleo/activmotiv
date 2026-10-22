@@ -11,13 +11,13 @@ export default function AdminScreen() {
   const theme = useTheme()
 
   const [loadingSensor, setLoadingSensor] = useState(false)
-  const [loadingQuestionnaire, setLoadingQuestionnaire] = useState(false)
+  const [loadingForm, setLoadingForm] = useState(false)
   const [snackbarVisible, setSnackbarVisible] = useState(false)
   const [snackbarText, setSnackbarText] = useState('')
 
-  const handleSendNotification = async (type: 'SENSOR' | 'QUESTIONNAIRE') => {
+  const handleSendNotification = async (type: 'SENSOR' | 'FORM') => {
     if (type === 'SENSOR') setLoadingSensor(true)
-    else setLoadingQuestionnaire(true)
+    else setLoadingForm(true)
 
     try {
       // 1. Sync device push token with backend before triggering admin notification
@@ -46,8 +46,8 @@ export default function AdminScreen() {
           const body = notifData.body || (isSensor
             ? "Bonjour, pensez à mettre le capteur à la taille aujourd'hui. Merci !"
             : "C'est l'heure de remplir votre questionnaire !")
-          const url = notifData.url || (isSensor ? '/(sensor)' : '/(questionnaires)')
-          const channelId = notifData.channelId || (isSensor ? 'sensor' : 'questionnaire')
+          const url = notifData.url || (isSensor ? '/(sensor)' : '/(forms)')
+          const channelId = notifData.channelId || (isSensor ? 'sensor' : 'form')
           const color = notifData.color || (isSensor ? '#EF5350' : '#29B6F6')
           const imageUrl = notifData.imageUrl || (isSensor
             ? 'https://activmotiv.fr/static/notifications/sensor.png?key=b4b01d6c7472362a30ac5470aac7f6be'
@@ -75,7 +75,7 @@ export default function AdminScreen() {
       setSnackbarText(errorMsg)
     } finally {
       if (type === 'SENSOR') setLoadingSensor(false)
-      else setLoadingQuestionnaire(false)
+      else setLoadingForm(false)
       setSnackbarVisible(true)
     }
   }
@@ -107,7 +107,7 @@ export default function AdminScreen() {
               mode="contained"
               icon="walk"
               loading={loadingSensor}
-              disabled={loadingSensor || loadingQuestionnaire}
+              disabled={loadingSensor || loadingForm}
               onPress={() => handleSendNotification('SENSOR')}
               buttonColor="#EF5350"
               textColor="#FFFFFF"
@@ -119,9 +119,9 @@ export default function AdminScreen() {
             <Button
               mode="contained"
               icon="clipboard-check-outline"
-              loading={loadingQuestionnaire}
-              disabled={loadingSensor || loadingQuestionnaire}
-              onPress={() => handleSendNotification('QUESTIONNAIRE')}
+              loading={loadingForm}
+              disabled={loadingSensor || loadingForm}
+              onPress={() => handleSendNotification('FORM')}
               buttonColor="#29B6F6"
               textColor="#FFFFFF"
               style={styles.button}

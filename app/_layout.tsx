@@ -35,8 +35,8 @@ function NotificationObserver() {
 
       if (url) {
         router.push(url as any)
-      } else if (type === 'QUESTIONNAIRE') {
-        router.push('/(questionnaires)')
+      } else if (type === 'FORM') {
+        router.push('/(forms)')
       } else if (type === 'SENSOR') {
         router.push('/(sensor)' as any)
       }

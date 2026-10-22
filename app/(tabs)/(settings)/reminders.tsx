@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react'
 import { ScrollView, StyleSheet } from 'react-native'
 import { Appbar, Button, Snackbar, useTheme, List, Divider, Text, Portal, Dialog } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Buffer } from 'buffer'
 import { useSession } from '@/contexts/auth'
 import { api } from '@/services/api'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -12,12 +11,12 @@ import { TimePickerModal, registerTranslation, fr } from 'react-native-paper-dat
 registerTranslation('fr', fr)
 
 export type DayKey = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN'
-export type ReminderType = 'QUESTIONNAIRE' | 'SENSOR'
+export type ReminderType = 'FORM' | 'SENSOR'
 
 export type ReminderSchedule = Record<DayKey, string>
 
 export interface RemindersState {
-  QUESTIONNAIRE: ReminderSchedule
+  FORM: ReminderSchedule
   SENSOR: ReminderSchedule
 }
 
@@ -32,7 +31,7 @@ const DAYS: { key: DayKey; label: string; short: string }[] = [
 ]
 
 const DEFAULT_REMINDERS: RemindersState = {
-  QUESTIONNAIRE: {
+  FORM: {
     MON: '08:00',
     TUE: '08:00',
     WED: '08:00',
@@ -87,7 +86,7 @@ export default function RemindersScreen() {
         const cached = await AsyncStorage.getItem(`user_reminders_${uid}`)
         if (cached) {
           const parsed = JSON.parse(cached)
-          if (parsed && parsed.QUESTIONNAIRE && parsed.SENSOR) {
+          if (parsed?.FORM && parsed.SENSOR) {
             setReminders(parsed)
           }
         }
@@ -100,7 +99,7 @@ export default function RemindersScreen() {
         const res = await api.get('/reminders')
         if (res.status === 200 && res.data) {
           const apiReminders: RemindersState = {
-            QUESTIONNAIRE: { ...DEFAULT_REMINDERS.QUESTIONNAIRE, ...(res.data.QUESTIONNAIRE || {}) },
+            FORM: { ...DEFAULT_REMINDERS.FORM, ...(res.data.FORM || {}) },
             SENSOR: { ...DEFAULT_REMINDERS.SENSOR, ...(res.data.SENSOR || {}) },
           }
           setReminders(apiReminders)
@@ -158,8 +157,8 @@ export default function RemindersScreen() {
   }
 
   const currentPickerTime = activePicker ? reminders[activePicker.type][activePicker.day] || '08:00' : '08:00'
-  const pickerHours = parseInt(currentPickerTime.split(':')[0], 10) || 8
-  const pickerMinutes = parseInt(currentPickerTime.split(':')[1], 10) || 0
+  const pickerHours = Number.parseInt(currentPickerTime.split(':')[0], 10) || 8
+  const pickerMinutes = Number.parseInt(currentPickerTime.split(':')[1], 10) || 0
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -179,10 +178,10 @@ export default function RemindersScreen() {
               right={() => (
                 <Button
                   mode="outlined"
-                  onPress={() => setActivePicker({ type: 'QUESTIONNAIRE', day: d.key })}
+                  onPress={() => setActivePicker({ type: 'FORM', day: d.key })}
                   style={styles.timeButton}
                 >
-                  {reminders.QUESTIONNAIRE[d.key] || '08:00'}
+                  {reminders.FORM[d.key] || '08:00'}
                 </Button>
               )}
               left={(props) => <List.Icon {...props} icon="calendar-clock" />}
@@ -222,7 +221,7 @@ export default function RemindersScreen() {
           minutes={pickerMinutes}
           use24HourClock
           locale="fr"
-          label={`Rappel ${activePicker.type === 'QUESTIONNAIRE' ? 'questionnaire' : 'capteur'} (${DAYS.find(d => d.key === activePicker.day)?.label})`}
+          label={`Rappel ${activePicker.type === 'FORM' ? 'questionnaire' : 'capteur'} (${DAYS.find(d => d.key === activePicker.day)?.label})`}
           cancelLabel="Annuler"
           confirmLabel="Valider"
         />

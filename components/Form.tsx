@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView } from 'react-native'
 import { Text, Button, Card, RadioButton, useTheme, IconButton, Portal, Dialog } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-export interface QuestionnaireItem {
+export interface FormItem {
   uid: string
   content: string
   answers: Array<{
@@ -13,13 +13,13 @@ export interface QuestionnaireItem {
   }>
 }
 
-export interface QuestionnaireProps {
+export interface FormProps {
   title: string
-  list: QuestionnaireItem[]
+  list: FormItem[]
   onSubmit: (results: Array<{ question: string; answer: any }>) => void
 }
 
-export default function Questionnaire({ title, list, onSubmit }: QuestionnaireProps) {
+export default function Form({ title, list, onSubmit }: FormProps) {
   const theme = useTheme()
   const [hasSubmit, setHasSubmit] = useState(false)
   const [infoModalVisible, setInfoModalVisible] = useState(true)
@@ -39,7 +39,7 @@ export default function Questionnaire({ title, list, onSubmit }: QuestionnairePr
 
   const scrollToSection = (index: number) => {
     const ref = sectionRefs.current[index]
-    if (ref && ref.current && scrollViewRef.current) {
+    if (ref?.current && scrollViewRef.current) {
       ref.current.measureLayout(
         scrollViewRef.current,
         (x: number, y: number) => {
@@ -166,7 +166,7 @@ export default function Questionnaire({ title, list, onSubmit }: QuestionnairePr
 }
 
 interface QuestionCardProps {
-  question: QuestionnaireItem
+  question: FormItem
   globalIndex: number
   globalSize: number
   hasSubmit: boolean

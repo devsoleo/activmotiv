@@ -2,9 +2,9 @@ import { useMemo } from 'react'
 import { View, StyleSheet } from 'react-native'
 import { Text, useTheme } from 'react-native-paper'
 import { attitudeAffectiveList, attitudeInstrumentaleList, intentionList } from '@/constants/forms'
-import Questionnaire from '@/components/Questionnaire'
+import Form from '@/components/Form'
 import { useRouter } from 'expo-router'
-import { enqueueForm } from '@/services/queue/questionnaires'
+import { enqueueForm } from '@/services/queue/forms'
 
 function getRandomItem<T>(list: T[]): T {
   return list[Math.floor(Math.random() * list.length)]
@@ -19,7 +19,7 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled
 }
 
-export default function QuestionnaireScreen() {
+export default function FormScreen() {
   const router = useRouter()
   const theme = useTheme()
 
@@ -30,11 +30,11 @@ export default function QuestionnaireScreen() {
   ]), [])
 
   return (
-    <Questionnaire
+    <Form
       title="Questionnaire"
       list={list}
       onSubmit={async (results) => {
-        await enqueueForm('questionnaires', 'daily', { results, timestamp: Date.now() })
+        await enqueueForm('forms', 'daily', { results, timestamp: Date.now() })
         router.replace('/(tabs)')
       }}
     />
