@@ -23,7 +23,7 @@ export function syncWithServer() {
 }
 
 export function syncSteppersWithServer(type) {
-  return api.get(`/analytics/steppers/${type}`)
+  return api.get(`/${type}/stepper`)
     .then((response) => response.data)
     .then(async (data) => {
       if (data) {
@@ -33,8 +33,9 @@ export function syncSteppersWithServer(type) {
     })
 }
 
-export async function getCachedSteppers() {
-  const steppers = await getItem('tracking', 'steppers')
+export async function getCachedSteppers(type) {
+  const key = type ? `${type}_steppers` : 'steppers'
+  const steppers = await getItem('tracking', key)
   return steppers
 }
 

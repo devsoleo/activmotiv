@@ -4,16 +4,15 @@ import { BarChart } from "react-native-gifted-charts"
 import { useCallback, useState } from 'react'
 import { useFocusEffect } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useSession } from '@/contexts/auth'
 import * as Notifications from 'expo-notifications'
 import * as Device from 'expo-device'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { api } from '@/services/api'
-import { getTrackingItem, syncWithServer, syncSteppersWithServer } from '@/services/cache/tracking'
-import { getCachedQuestionnaireStatus, syncQuestionnaireStatusWithServer } from '@/services/cache/questionnaires'
+import { getTrackingItem, syncWithServer, syncSteppersWithServer, getCachedSteppers } from '@/services/cache/tracking'
+import { getCachedFormStatus, syncFormStatusWithServer } from '@/services/cache/forms'
 import Task from '@/components/Task'
-import WeeklyStepper, { DayStep } from '@/components/SensorStepper'
-import QuestionnaireStepper from '@/components/QuestionnaireStepper'
+import SensorStepper, { DayStep } from '@/components/SensorStepper'
+import FormStepper, { FormStep } from '@/components/FormStepper'
 
 function formatDuration(totalMilliseconds: number | null | undefined): string {
   if (totalMilliseconds == null || Number.isNaN(totalMilliseconds) || totalMilliseconds <= 0) return '0s'
@@ -41,16 +40,7 @@ function formatDuration(totalMilliseconds: number | null | undefined): string {
 
 export default function TrackingScreen() {
   const theme = useTheme()
-  const { accessToken } = useSession()
   const { width: screenWidth } = Dimensions.get('window')
-
-  let isAdmin = false
-  if (accessToken) {
-    try {
-      const payload = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())
-      isAdmin = payload['team'] === 0
-    } catch {}
-  }
 
   // States pour le suivi
   const [barData, setBarData] = useState<any[]>([])
@@ -59,48 +49,66 @@ export default function TrackingScreen() {
   const [infoModalVisible, setInfoModalVisible] = useState<boolean>(false)
 
   // State pour les questionnaires
-  const [displayQuestionnaire, setDisplayQuestionnaire] = useState<boolean>(false)
+  const [formStatus, setFormStatus] = useState<{
+    inPhase: boolean;
+    inTimeWindow: boolean;
+    doneToday: boolean;
+  }>({ inPhase: false, inTimeWindow: false, doneToday: false })
 
   // States pour les steppers
-  const defaultDays: DayStep[] = ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((label, idx) => ({
+  const defaultSensorDays: DayStep[] = ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((label, idx) => ({
     label,
     status: 'empty',
     isTogglable: false
   }))
 
-  const defaultFormDays: DayStep[] = ['J1', 'J2', 'J3', 'J4', 'J5', 'J6', 'J7'].map((label, idx) => ({
+  const defaultFormDays: FormStep[] = ['J1', 'J2', 'J3', 'J4', 'J5', 'J6', 'J7'].map((label, idx) => ({
     label,
     status: 'empty',
-    isTogglable: false
+    selected: false
   }))
 
-  const [sensorDays, setSensorDays] = useState<DayStep[]>(defaultDays)
-  const [formDays, setFormDays] = useState<DayStep[]>(defaultFormDays)
+  const [sensorDays, setSensorDays] = useState<DayStep[]>(defaultSensorDays)
+  const [formDays, setFormDays] = useState<FormStep[]>(defaultFormDays)
 
   // Chargement des steppers
   const getSensorSteppersData = async () => {
     try {
-      const data = await syncSteppersWithServer('sensor')
+      const cached = await getCachedSteppers('sensors')
+      if (cached?.days) setSensorDays(cached.days)
+    } catch (e) {
+      console.error("Failed to load sensor steppers from cache:", e)
+    }
+
+    try {
+      const data = await syncSteppersWithServer('sensors')
 
       if (data?.days) setSensorDays(data.days)
     } catch (e) {
-      console.error("Failed to sync steppers with server:", e)
+      console.error("Failed to sync sensor steppers with server:", e)
     }
   }
 
   const getFormSteppersData = async () => {
     try {
-      const data = await syncSteppersWithServer('form')
+      const cached = await getCachedSteppers('forms')
+      if (cached?.days) setFormDays(cached.days)
+    } catch (e) {
+      console.error("Failed to load form steppers from cache:", e)
+    }
+
+    try {
+      const data = await syncSteppersWithServer('forms')
 
       if (data?.days) setFormDays(data.days)
     } catch (e) {
-      console.error("Failed to sync steppers with server:", e)
+      console.error("Failed to sync form steppers with server:", e)
     }
   }
 
   const handleToggleSensorDay = async (stepDayIndex: number) => {
     try {
-      await api.post('/sensor/toggle', { weekDayIndex: stepDayIndex })
+      await api.post('/sensors/toggle', { weekDayIndex: stepDayIndex })
       await getSensorSteppersData()
     } catch (e) {
       console.error("Error :", stepDayIndex, e)
@@ -167,38 +175,38 @@ export default function TrackingScreen() {
   }
 
   // Chargement des questionnaires et télémétrie
-  const getQuestionnairesAndTelemetry = async () => {
+  const getFormAndTelemetry = async () => {
     try {
-      const cachedDisplay = await getCachedQuestionnaireStatus()
+      const cachedDisplay = await getCachedFormStatus()
       if (cachedDisplay !== undefined && cachedDisplay !== null) {
-        setDisplayQuestionnaire(cachedDisplay)
+        setFormStatus(cachedDisplay)
       }
     } catch (e) {
-      console.error("Failed to load questionnaire status from cache:", e)
+      console.error("Failed to load form status from cache:", e)
     }
 
     try {
-      const data = await syncQuestionnaireStatusWithServer()
-      if (data && typeof data.display === 'boolean') {
-        setDisplayQuestionnaire(data.display)
+      const data = await syncFormStatusWithServer()
+      if (data && typeof data === 'object') {
+        setFormStatus(data)
       }
     } catch (error) {
-      console.error("Failed to sync questionnaire status with server:", error)
+      console.error("Failed to sync form status with server:", error)
     }
 
-    Notifications.getDevicePushTokenAsync().then(e => {
-      api.put('/notifications/token', { fcmToken: e.data })
+    await Notifications.getDevicePushTokenAsync().then(async e => {
+      await api.put('/notifications/token', { fcmToken: e.data })
     })
 
-    Notifications.setNotificationChannelAsync('sensor', {
+    await Notifications.setNotificationChannelAsync('sensor', {
       name: 'Rappels de port de capteur',
       description: 'Canal SENSOR',
       importance: Notifications.AndroidImportance.MAX
     })
 
-    Notifications.setNotificationChannelAsync('questionnaire', {
+    await Notifications.setNotificationChannelAsync('form', {
       name: 'Rappels de questionnaire',
-      description: 'Canal QUESTIONNAIRE',
+      description: 'Canal FORM',
       importance: Notifications.AndroidImportance.MAX
     })
 
@@ -214,20 +222,20 @@ export default function TrackingScreen() {
   useFocusEffect(
     useCallback(() => {
       getTracking()
-      getQuestionnairesAndTelemetry()
+      getFormAndTelemetry()
       getSensorSteppersData()
       getFormSteppersData()
 
       const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
         if (nextAppState === 'active') {
           getTracking()
-          getQuestionnairesAndTelemetry()
+          getFormAndTelemetry()
           getSensorSteppersData()
           getFormSteppersData()
           
           const timer = setTimeout(() => {
             getTracking()
-            getQuestionnairesAndTelemetry()
+            getFormAndTelemetry()
             getSensorSteppersData()
             getFormSteppersData()
           }, 800)
@@ -260,7 +268,7 @@ export default function TrackingScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
 
         {/* Section 1 : Questionnaires */}
-        {displayQuestionnaire && (
+        {formStatus.inPhase && formStatus.inTimeWindow && !formStatus.doneToday && (
           <>
             <Text variant="titleLarge" style={[styles.sectionHeader, { color: theme.colors.primary }]}>
               Vos questionnaires à compléter
@@ -273,10 +281,16 @@ export default function TrackingScreen() {
                 title: "Questionnaire quotidien",
                 content: "Vous avez un questionnaire à remplir !",
                 image: "https://activmotiv.fr/static/notifications/ema.png?key=b4b01d6c7472362a30ac5470aac7f6be",
-                action: { path: "/(questionnaires)/", text: "Remplir" }
+                action: { path: "/(forms)/", text: "Remplir" }
               }}
               disabled={false}
             />
+          </>
+        )}
+
+        {!formStatus.inPhase && (
+          <>
+          <Text>DEMAIN</Text>
           </>
         )}
 
@@ -285,19 +299,15 @@ export default function TrackingScreen() {
           Progression cette semaine
         </Text>
 
-        {isAdmin ? (
-          <QuestionnaireStepper
+        {formStatus.inPhase && (
+          <FormStepper
             title="Questionnaire quotidien"
             days={formDays}
             icon="clipboard-check-outline"
           />
-        ) : (
-          <View style={styles.card}>
-            <Text>Prochain questionnaire le </Text>
-          </View>
         )}
 
-        <WeeklyStepper
+        <SensorStepper
           title="Port du capteur"
           days={sensorDays}
           icon="walk"
@@ -445,12 +455,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 8
   },
-  nextQuestionnaireCardContent: {
+  nextFormCardContent: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8
   },
-  nextQuestionnaireIconWrapper: {
+  nextFormIconWrapper: {
     width: 36,
     height: 36,
     borderRadius: 18,

@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { api } from '@/services/api'
+import { markFormAsDoneLocally } from '@/services/cache/forms'
 
-const CACHED_RESULTS_KEY = 'cached_questionnaire_results'
+const CACHED_RESULTS_KEY = 'cached_forms_results'
 
 export async function saveLocalResult(label, payload) {
   try {
@@ -48,6 +49,10 @@ export async function enqueueForm(key, label, payload) {
     // Sauvegarde également dans l'historique local hors-ligne
     await saveLocalResult(label, payload)
 
+    if (label === 'daily' || key === 'forms') {
+      await markFormAsDoneLocally()
+    }
+
     // Tente immédiatement de synchroniser avec le serveur
     await syncForms(key)
   } catch (e) {
@@ -55,7 +60,7 @@ export async function enqueueForm(key, label, payload) {
   }
 }
 
-export async function syncForms(key = 'questionnaires') {
+export async function syncForms(key = 'forms') {
   try {
     const raw = await AsyncStorage.getItem(key)
     const queue = raw ? JSON.parse(raw) : []
@@ -67,7 +72,7 @@ export async function syncForms(key = 'questionnaires') {
       const { payload, label } = item
 
       try {
-        await api.post(`/questionnaires/${label}`, { data: payload })
+        await api.post(`/forms/${label}`, { data: payload })
       } catch (e) {
         console.warn("Failed to sync queue item, keeping in offline cache:", e?.message || e)
         remaining.push(item)
@@ -76,6 +81,6 @@ export async function syncForms(key = 'questionnaires') {
 
     await AsyncStorage.setItem(key, JSON.stringify(remaining))
   } catch (e) {
-    console.error("Error syncing questionnaire forms:", e)
+    console.error("Error syncing forms:", e)
   }
 }

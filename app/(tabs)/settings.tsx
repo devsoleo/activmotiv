@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router'
 import { StyleSheet, Linking } from 'react-native'
 import { Text, Divider, List, useTheme } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
-
+import { Buffer } from 'buffer'
 import { useSession } from '@/contexts/auth'
 
 export default function SettingsScreen() {
@@ -15,7 +15,9 @@ export default function SettingsScreen() {
     try {
       const payload = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())
       isAdmin = payload['team'] === 0
-    } catch {}
+    } catch (e) {
+      console.log(e)
+    }
   }
 
   return (

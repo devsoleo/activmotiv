@@ -17,12 +17,12 @@ import SAM from './components/SAM'
 registerTranslation('fr', fr)
 
 export type DayKey = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN'
-export type ReminderType = 'QUESTIONNAIRE' | 'SENSOR'
+export type ReminderType = 'FORM' | 'SENSOR'
 
 export type ReminderSchedule = Record<DayKey, string>
 
 export interface RemindersState {
-  QUESTIONNAIRE: ReminderSchedule
+  FORM: ReminderSchedule
   SENSOR: ReminderSchedule
 }
 
@@ -37,7 +37,7 @@ const DAYS: { key: DayKey; label: string; short: string }[] = [
 ]
 
 const DEFAULT_REMINDERS: RemindersState = {
-  QUESTIONNAIRE: {
+  FORM: {
     MON: '08:00',
     TUE: '08:00',
     WED: '08:00',
@@ -127,7 +127,7 @@ export default function OnboardingScreen() {
         const cached = await AsyncStorage.getItem(`user_reminders_${uid}`)
         if (cached) {
           const parsed = JSON.parse(cached)
-          if (parsed && parsed.QUESTIONNAIRE && parsed.SENSOR) {
+          if (parsed && parsed.FORM && parsed.SENSOR) {
             setReminders(parsed)
           }
         }
@@ -135,7 +135,7 @@ export default function OnboardingScreen() {
         const res = await api.get('/reminders')
         if (res.status === 200 && res.data) {
           const apiReminders: RemindersState = {
-            QUESTIONNAIRE: { ...DEFAULT_REMINDERS.QUESTIONNAIRE, ...(res.data.QUESTIONNAIRE || {}) },
+            FORM: { ...DEFAULT_REMINDERS.FORM, ...(res.data.FORM || {}) },
             SENSOR: { ...DEFAULT_REMINDERS.SENSOR, ...(res.data.SENSOR || {}) },
           }
           setReminders(apiReminders)
@@ -154,8 +154,10 @@ export default function OnboardingScreen() {
     if (accessToken) {
       try {
         const payload = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())
-        isAdmin = payload['team'] === 0 || !!payload['admin']
-      } catch {}
+        isAdmin = payload['team'] === 0
+      } catch (e) {
+        console.log(e)
+      }
     }
 
     if (!isAdmin && (hours < 5 || hours > 13 || (hours === 13 && minutes > 0))) {
@@ -440,10 +442,10 @@ export default function OnboardingScreen() {
                       right={() => (
                         <Button
                           mode="outlined"
-                          onPress={() => setActivePicker({ type: 'QUESTIONNAIRE', day: d.key })}
+                          onPress={() => setActivePicker({ type: 'FORM', day: d.key })}
                           style={styles.timeButton}
                         >
-                          {reminders.QUESTIONNAIRE[d.key] || '08:00'}
+                          {reminders.FORM[d.key] || '08:00'}
                         </Button>
                       )}
                       left={(props) => <List.Icon {...props} icon="calendar-clock" />}
@@ -506,11 +508,11 @@ export default function OnboardingScreen() {
           visible={!!activePicker}
           onDismiss={() => setActivePicker(null)}
           onConfirm={handleConfirmTime}
-          hours={parseInt((reminders[activePicker.type][activePicker.day] || '08:00').split(':')[0], 10) || 8}
-          minutes={parseInt((reminders[activePicker.type][activePicker.day] || '08:00').split(':')[1], 10) || 0}
+          hours={Number.parseInt((reminders[activePicker.type][activePicker.day] || '08:00').split(':')[0], 10) || 8}
+          minutes={Number.parseInt((reminders[activePicker.type][activePicker.day] || '08:00').split(':')[1], 10) || 0}
           use24HourClock
           locale="fr"
-          label={`Rappel ${activePicker.type === 'QUESTIONNAIRE' ? 'questionnaire' : 'capteur'} (${DAYS.find(d => d.key === activePicker.day)?.label})`}
+          label={`Rappel ${activePicker.type === 'FORM' ? 'questionnaire' : 'capteur'} (${DAYS.find(d => d.key === activePicker.day)?.label})`}
           cancelLabel="Annuler"
           confirmLabel="Valider"
         />

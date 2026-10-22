@@ -4,38 +4,26 @@ import { Text, Card, useTheme, Icon } from 'react-native-paper'
 
 export type DayStatus = 'done' | 'not-done' | 'empty'
 
-export interface DayStep {
+export interface FormStep {
   label: string
   status?: DayStatus,
-  isTogglable: boolean
+  selected: boolean
 }
 
-interface QuestionnaireStepperProps {
+interface FormStepperProps {
   title: string
-  days: DayStep[]
+  days: FormStep[]
   icon?: string
 }
 
-export default function QuestionnaireStepper({
+export default function FormStepper({
   title,
   days,
   icon
-}: Readonly<QuestionnaireStepperProps>) {
+}: Readonly<FormStepperProps>) {
   const theme = useTheme()
 
-  const currentJsDay = new Date().getDay()
-  const currentDayIndex = currentJsDay === 0 ? 6 : currentJsDay - 1
-
-  const getDayStatus = (day: DayStep, index: number): DayStatus => {
-    if (day.status) return day.status
-    if (currentDayIndex !== undefined) {
-      if (index < currentDayIndex) return 'not-done'
-      return 'empty'
-    }
-    return 'empty'
-  }
-
-  const count = days.filter((d, idx) => getDayStatus(d, idx) === 'done').length
+  const count = days.filter((d) => d.status === 'done').length
 
   return (
     <Card style={styles.card} mode="elevated">
@@ -60,14 +48,14 @@ export default function QuestionnaireStepper({
 
         <View style={styles.stepperRow}>
           {days.map((day, index) => {
-            const status = getDayStatus(day, index)
+            const status = day.status
             const isLast = index === days.length - 1
-            const nextStatus = !isLast ? getDayStatus(days[index + 1], index + 1) : 'empty'
-            const isCurrentDay = index === currentDayIndex
+            const nextStatus = !isLast ? days[index + 1].status : 'empty'
+            const isCurrentDay = day.selected
 
             let circleBg
             let circleBorder
-            let borderWidth = 1.5
+            let borderWidth = isCurrentDay ? 2.5 : 1.5
             let iconComponent = null
 
             const GREEN_COLOR = '#4CAF50'
@@ -89,15 +77,9 @@ export default function QuestionnaireStepper({
               circleBorder = isCurrentDay ? theme.colors.primary : theme.colors.outlineVariant
             }
 
-            if (isCurrentDay) {
-              borderWidth = 2.5
-            } else if (currentDayIndex !== undefined && index < currentDayIndex) {
-              borderWidth = 0
-            }
-
             let labelColor = theme.colors.onSurfaceVariant
-            if (status === 'done') labelColor = GREEN_DARK
-            else if (status === 'not-done') labelColor = RED_DARK
+            if (status === 'done') labelColor = GREEN_COLOR
+            else if (status === 'not-done') labelColor = RED_COLOR
             else if (isCurrentDay) labelColor = theme.colors.primary
 
             return (
@@ -131,10 +113,7 @@ export default function QuestionnaireStepper({
                     style={[
                       styles.connector,
                       {
-                        backgroundColor:
-                          status === 'done' && nextStatus === 'done'
-                            ? GREEN_COLOR
-                            : theme.colors.outlineVariant
+                        backgroundColor: status !== nextStatus ? theme.colors.outlineVariant : status === 'done' ? GREEN_COLOR : RED_COLOR
                       }
                     ]}
                   />
