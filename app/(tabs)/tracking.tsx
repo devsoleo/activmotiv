@@ -8,8 +8,8 @@ import * as Notifications from 'expo-notifications'
 import * as Device from 'expo-device'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { api } from '@/services/api'
-import { getTrackingItem, syncWithServer, syncSteppersWithServer, getCachedSteppers } from '@/services/cache/tracking'
-import { getCachedFormStatus, syncFormStatusWithServer } from '@/services/cache/forms'
+import { useTrackingData, useFormStatus, useSensorSteppers, useFormSteppers } from '@/hooks/useTrackingQueries'
+import { enqueueSensorToggle } from '@/services/queue/sensors'
 import Task from '@/components/Task'
 import SensorStepper, { DayStep } from '@/components/SensorStepper'
 import FormStepper, { FormStep } from '@/components/FormStepper'
@@ -41,213 +41,102 @@ function formatDuration(totalMilliseconds: number | null | undefined): string {
 export default function TrackingScreen() {
   const theme = useTheme()
   const { width: screenWidth } = Dimensions.get('window')
-
-  // States pour le suivi
-  const [barData, setBarData] = useState<any[]>([])
-  const [openingAmount, setOpeningAmount] = useState<number>(0)
-  const [exposureDuration, setExposureDuration] = useState<number>(0)
   const [infoModalVisible, setInfoModalVisible] = useState<boolean>(false)
 
-  // State pour les questionnaires
-  const [formStatus, setFormStatus] = useState<{
-    inPhase: boolean;
-    inTimeWindow: boolean;
-    doneToday: boolean;
-  }>({ inPhase: false, inTimeWindow: false, doneToday: false })
+  // React Query Hooks
+  const { data: formStatusData, refetch: refetchFormStatus } = useFormStatus()
+  const { data: sensorSteppersData, refetch: refetchSensorSteppers } = useSensorSteppers()
+  const { data: formSteppersData, refetch: refetchFormSteppers } = useFormSteppers()
+  const { data: trackingData, refetch: refetchTracking } = useTrackingData()
 
-  // States pour les steppers
-  const defaultSensorDays: DayStep[] = ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((label, idx) => ({
+  const formStatus = formStatusData || { inPhase: false, inTimeWindow: false, doneToday: false }
+
+  const defaultSensorDays: DayStep[] = ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((label) => ({
     label,
     status: 'empty',
     isTogglable: false
   }))
 
-  const defaultFormDays: FormStep[] = ['J1', 'J2', 'J3', 'J4', 'J5', 'J6', 'J7'].map((label, idx) => ({
+  const defaultFormDays: FormStep[] = ['J1', 'J2', 'J3', 'J4', 'J5', 'J6', 'J7'].map((label) => ({
     label,
     status: 'empty',
     selected: false
   }))
 
-  const [sensorDays, setSensorDays] = useState<DayStep[]>(defaultSensorDays)
-  const [formDays, setFormDays] = useState<FormStep[]>(defaultFormDays)
-
-  // Chargement des steppers
-  const getSensorSteppersData = async () => {
-    try {
-      const cached = await getCachedSteppers('sensors')
-      if (cached?.days) setSensorDays(cached.days)
-    } catch (e) {
-      console.error("Failed to load sensor steppers from cache:", e)
-    }
-
-    try {
-      const data = await syncSteppersWithServer('sensors')
-
-      if (data?.days) setSensorDays(data.days)
-    } catch (e) {
-      console.error("Failed to sync sensor steppers with server:", e)
-    }
-  }
-
-  const getFormSteppersData = async () => {
-    try {
-      const cached = await getCachedSteppers('forms')
-      if (cached?.days) setFormDays(cached.days)
-    } catch (e) {
-      console.error("Failed to load form steppers from cache:", e)
-    }
-
-    try {
-      const data = await syncSteppersWithServer('forms')
-
-      if (data?.days) setFormDays(data.days)
-    } catch (e) {
-      console.error("Failed to sync form steppers with server:", e)
-    }
-  }
+  const sensorDays = sensorSteppersData?.days || defaultSensorDays
+  const formDays = formSteppersData?.days || defaultFormDays
 
   const handleToggleSensorDay = async (stepDayIndex: number) => {
     try {
-      await api.post('/sensors/toggle', { weekDayIndex: stepDayIndex })
-      await getSensorSteppersData()
+      await enqueueSensorToggle(stepDayIndex)
+      refetchSensorSteppers()
     } catch (e) {
-      console.error("Error :", stepDayIndex, e)
+      console.error("Error toggling sensor day:", stepDayIndex, e)
     }
   }
 
-  // Chargement des données de suivi
-  const getTracking = async () => {
-    const currentJsDay = new Date().getDay()
-    const currentDayIndex = currentJsDay === 0 ? 6 : currentJsDay - 1
+  const currentJsDay = new Date().getDay()
+  const currentDayIndex = currentJsDay === 0 ? 6 : currentJsDay - 1
 
-    const getCurrentWeekMonday = () => {
-      const d = new Date()
-      const day = d.getDay()
-      const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-      const monday = new Date(d.setDate(diff))
-      monday.setHours(0, 0, 0, 0)
-      return monday.toISOString().split('T')[0]
-    }
-
-    const sanitizeOpeningData = (openingList: any[]) => {
-      if (!Array.isArray(openingList)) return []
-      return openingList.map((item: any, index: number) => ({
-        ...item,
-        // Future days in the current week cannot have openings yet
-        value: index > currentDayIndex ? 0 : (item.value || 0),
-        frontColor: index === currentDayIndex ? theme.colors.primary : 'lightgray'
-      }))
-    }
-
-    try {
-      const cachedWeek = await getTrackingItem('weekStart')
-      const currentWeek = getCurrentWeekMonday()
-
-      const cachedAmount = await getTrackingItem('amount')
-      const cachedDuration = await getTrackingItem('duration')
-      const cachedOpening = await getTrackingItem('opening')
-
-      if (cachedAmount !== undefined) setOpeningAmount(cachedAmount)
-      if (cachedDuration !== undefined) setExposureDuration(cachedDuration)
-
-      if (cachedOpening && cachedWeek === currentWeek) {
-        setBarData(sanitizeOpeningData(cachedOpening))
-      } else {
-        const emptyLabels = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
-        setBarData(sanitizeOpeningData(emptyLabels.map(label => ({ label, value: 0 }))))
-      }
-    } catch (e) {
-      console.error("Failed to load tracking from cache:", e)
-    }
-
-    try {
-      const data = await syncWithServer()
-      if (data) {
-        setOpeningAmount(data.amount)
-        setExposureDuration(data.duration)
-        if (data.opening) {
-          setBarData(sanitizeOpeningData(data.opening))
-        }
-      }
-    } catch (e) {
-      console.error("Failed to sync tracking with server:", e)
-    }
+  const sanitizeOpeningData = (openingList: any[]) => {
+    if (!Array.isArray(openingList)) return []
+    return openingList.map((item: any, index: number) => ({
+      ...item,
+      value: index > currentDayIndex ? 0 : (item.value || 0),
+      frontColor: index === currentDayIndex ? theme.colors.primary : 'lightgray'
+    }))
   }
 
-  // Chargement des questionnaires et télémétrie
-  const getFormAndTelemetry = async () => {
+  const openingAmount = trackingData?.amount || 0
+  const exposureDuration = trackingData?.duration || 0
+  const barData = sanitizeOpeningData(trackingData?.opening || [])
+
+  const setupTelemetryAndNotifications = async () => {
     try {
-      const cachedDisplay = await getCachedFormStatus()
-      if (cachedDisplay !== undefined && cachedDisplay !== null) {
-        setFormStatus(cachedDisplay)
-      }
-    } catch (e) {
-      console.error("Failed to load form status from cache:", e)
-    }
+      await Notifications.getDevicePushTokenAsync().then(async e => {
+        await api.put('/notifications/token', { fcmToken: e.data })
+      })
 
-    try {
-      const data = await syncFormStatusWithServer()
-      if (data && typeof data === 'object') {
-        setFormStatus(data)
-      }
-    } catch (error) {
-      console.error("Failed to sync form status with server:", error)
-    }
+      await Notifications.setNotificationChannelAsync('sensor', {
+        name: 'Rappels de port de capteur',
+        description: 'Canal SENSOR',
+        importance: Notifications.AndroidImportance.MAX
+      })
 
-    await Notifications.getDevicePushTokenAsync().then(async e => {
-      await api.put('/notifications/token', { fcmToken: e.data })
-    })
+      await Notifications.setNotificationChannelAsync('form', {
+        name: 'Rappels de questionnaire',
+        description: 'Canal FORM',
+        importance: Notifications.AndroidImportance.MAX
+      })
 
-    await Notifications.setNotificationChannelAsync('sensor', {
-      name: 'Rappels de port de capteur',
-      description: 'Canal SENSOR',
-      importance: Notifications.AndroidImportance.MAX
-    })
-
-    await Notifications.setNotificationChannelAsync('form', {
-      name: 'Rappels de questionnaire',
-      description: 'Canal FORM',
-      importance: Notifications.AndroidImportance.MAX
-    })
-
-    const registerDevice = async () => {
       const androidId = await AsyncStorage.getItem('androidId')
-      if (!androidId) console.log('androidId manquant')
       await api.put('/telemetry/device', { androidId, device: Device })
+    } catch (e) {
+      console.error("Failed to setup telemetry:", e)
     }
-
-    registerDevice()
   }
 
   useFocusEffect(
     useCallback(() => {
-      getTracking()
-      getFormAndTelemetry()
-      getSensorSteppersData()
-      getFormSteppersData()
+      refetchFormStatus()
+      refetchSensorSteppers()
+      refetchFormSteppers()
+      refetchTracking()
+      setupTelemetryAndNotifications()
 
       const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
         if (nextAppState === 'active') {
-          getTracking()
-          getFormAndTelemetry()
-          getSensorSteppersData()
-          getFormSteppersData()
-          
-          const timer = setTimeout(() => {
-            getTracking()
-            getFormAndTelemetry()
-            getSensorSteppersData()
-            getFormSteppersData()
-          }, 800)
-
-          return () => clearTimeout(timer)
+          refetchFormStatus()
+          refetchSensorSteppers()
+          refetchFormSteppers()
+          refetchTracking()
         }
       })
 
       return () => {
         subscription.remove()
       }
-    }, [])
+    }, [refetchFormStatus, refetchSensorSteppers, refetchFormSteppers, refetchTracking])
   )
 
   return (

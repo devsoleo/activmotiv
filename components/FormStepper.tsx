@@ -113,7 +113,7 @@ export default function FormStepper({
                     style={[
                       styles.connector,
                       {
-                        backgroundColor: status !== nextStatus ? theme.colors.outlineVariant : status === 'done' ? GREEN_COLOR : RED_COLOR
+                        backgroundColor: status !== nextStatus ? theme.colors.outlineVariant : status === 'done' ? GREEN_COLOR : status === 'not-done' ? RED_COLOR : theme.colors.outlineVariant
                       }
                     ]}
                   />

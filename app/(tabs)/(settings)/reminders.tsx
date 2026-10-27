@@ -4,8 +4,7 @@ import { ScrollView, StyleSheet } from 'react-native'
 import { Appbar, Button, Snackbar, useTheme, List, Divider, Text, Portal, Dialog } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useSession } from '@/contexts/auth'
-import { api } from '@/services/api'
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import { useReminders, useUpdateReminders } from '@/hooks/useOnboardingQueries'
 import { TimePickerModal, registerTranslation, fr } from 'react-native-paper-dates'
 
 registerTranslation('fr', fr)
@@ -78,53 +77,27 @@ export default function RemindersScreen() {
     }
   }
 
-  useEffect(() => {
-    if (!uid) return
-    const loadReminderTimes = async () => {
-      // 1. Load local cache
-      try {
-        const cached = await AsyncStorage.getItem(`user_reminders_${uid}`)
-        if (cached) {
-          const parsed = JSON.parse(cached)
-          if (parsed?.FORM && parsed.SENSOR) {
-            setReminders(parsed)
-          }
-        }
-      } catch (e) {
-        console.error('Failed to load local reminder times:', e)
-      }
+  const { data: remindersData } = useReminders()
+  const updateRemindersMutation = useUpdateReminders()
 
-      // 2. Sync with API
-      try {
-        const res = await api.get('/reminders')
-        if (res.status === 200 && res.data) {
-          const apiReminders: RemindersState = {
-            FORM: { ...DEFAULT_REMINDERS.FORM, ...(res.data.FORM || {}) },
-            SENSOR: { ...DEFAULT_REMINDERS.SENSOR, ...(res.data.SENSOR || {}) },
-          }
-          setReminders(apiReminders)
-          await AsyncStorage.setItem(`user_reminders_${uid}`, JSON.stringify(apiReminders))
-        }
-      } catch (e) {
-        console.warn('Could not sync reminders from API:', e)
+  useEffect(() => {
+    if (remindersData) {
+      const apiReminders: RemindersState = {
+        FORM: { ...DEFAULT_REMINDERS.FORM, ...(remindersData.FORM || {}) },
+        SENSOR: { ...DEFAULT_REMINDERS.SENSOR, ...(remindersData.SENSOR || {}) },
       }
+      setReminders(apiReminders)
     }
-    loadReminderTimes()
-  }, [uid])
+  }, [remindersData])
 
   const saveRemindersToApi = async (newReminders: RemindersState) => {
     try {
-      await AsyncStorage.setItem(`user_reminders_${uid}`, JSON.stringify(newReminders))
-      const res = await api.put('/reminders', newReminders)
-      if (res.status === 200) {
-        setSnackbarText('Heures de rappel mises à jour !')
-      } else {
-        setSnackbarText('Enregistré en local.')
-      }
+      await updateRemindersMutation.mutateAsync(newReminders)
+      setSnackbarText('Heures de rappel mises à jour !')
       setVisible(true)
     } catch (e) {
       console.error('Failed to sync reminder times to API:', e)
-      setSnackbarText('Enregistré en local (hors-ligne).')
+      setSnackbarText('Erreur lors de la mise à jour.')
       setVisible(true)
     }
   }

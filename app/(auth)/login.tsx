@@ -1,10 +1,9 @@
 import { useState } from 'react'
-import { StyleSheet, Alert, Platform, TouchableOpacity, Image, Dimensions, KeyboardAvoidingView, View, Linking } from 'react-native'
-import { TextInput, Button, Text, useTheme, IconButton, Portal, Dialog } from 'react-native-paper'
+import { StyleSheet, Platform, TouchableOpacity, Image, Dimensions, KeyboardAvoidingView, View, Linking } from 'react-native'
+import { TextInput, Button, Text, useTheme, IconButton, Portal, Dialog, Icon } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { useSession } from '@/contexts/auth'
 import { api } from '@/services/api'
-import * as SAMCache from '@/services/cache/sam'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -17,29 +16,77 @@ export default function LoginPage() {
   const [isPasswordSecure, setIsPasswordSecure] = useState(true)
   const [loading, setLoading] = useState(false)
   const [infoModalVisible, setInfoModalVisible] = useState(false)
+  const [errorModal, setErrorModal] = useState<{
+    visible: boolean
+    title: string
+    message: string
+    icon: string
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    icon: 'alert-circle-outline',
+  })
+
+  const showAlert = (title: string, message: string, icon: string = 'alert-circle-outline') => {
+    setErrorModal({
+      visible: true,
+      title,
+      message,
+      icon,
+    })
+  }
 
   const handleLogin = async () => {
+    if (!uid.trim() || !password.trim()) {
+      showAlert(
+        'Champs requis',
+        'Veuillez saisir votre identifiant et votre mot de passe.',
+        'alert-circle-outline'
+      )
+      return
+    }
+
     setLoading(true)
 
     try {
       const response = await api.post('/auth/login', { uid, password })
 
-      if (response.status == 200) {
+      if (response.status === 200) {
         const data = response.data
-
         signIn(data.accessToken)
-
-        SAMCache.loadFromServer()
-
         console.log("Connexion réussie !")
-
         router.replace("/(tabs)")
       } else {
-        Alert.alert('Erreur', 'Identifiants invalides')
+        showAlert(
+          'Identifiants invalides',
+          'L\'identifiant ou le mot de passe est incorrect.',
+          'lock-alert-outline'
+        )
       }
     } catch (error: any) {
-      Alert.alert('Erreur', error.message)
-      console.error(error)
+      console.log("Login error:", error)
+      const isNetworkErr = !error.response || error.code === 'ERR_NETWORK' || error.message?.includes('Network Error') || error.message?.includes('network')
+
+      if (isNetworkErr) {
+        showAlert(
+          'Connexion réseau impossible',
+          'Impossible de contacter le serveur ActivMotiv.\n\nVeuillez vérifier votre connexion Internet (Wi-Fi ou données mobiles) et réessayez.',
+          'wifi-off'
+        )
+      } else if (error.response?.status === 401 || error.response?.status === 403) {
+        showAlert(
+          'Identifiants incorrects',
+          error.response?.data?.error || 'L\'identifiant ou le mot de passe saisi est incorrect.',
+          'lock-alert-outline'
+        )
+      } else {
+        showAlert(
+          'Erreur de connexion',
+          error.response?.data?.error || error.message || 'Une erreur inattendue est survenue lors de la connexion.',
+          'alert-circle-outline'
+        )
+      }
     } finally {
       setLoading(false)
     }
@@ -49,7 +96,7 @@ export default function LoginPage() {
   const screenWidth = Dimensions.get('window').width
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={[styles.wrapper, { backgroundColor: theme.colors.background }]}>
+    <KeyboardAvoidingView behavior={'height'} style={[styles.wrapper, { backgroundColor: theme.colors.background }]}>
       <IconButton
         icon="information-outline"
         size={24}
@@ -102,6 +149,33 @@ export default function LoginPage() {
       </TouchableOpacity>
 
       <Portal>
+        <Dialog
+          visible={errorModal.visible}
+          onDismiss={() => setErrorModal((prev) => ({ ...prev, visible: false }))}
+          style={{ borderRadius: 16 }}
+        >
+          <View style={{ alignItems: 'center', paddingTop: 20 }}>
+            <Icon source={errorModal.icon} size={48} color={theme.colors.error} />
+          </View>
+          <Dialog.Title style={{ textAlign: 'center', fontWeight: 'bold' }}>
+            {errorModal.title}
+          </Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium" style={{ textAlign: 'center', color: theme.colors.onSurfaceVariant }}>
+              {errorModal.message}
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions style={{ justifyContent: 'center', paddingBottom: 16 }}>
+            <Button
+              mode="contained"
+              onPress={() => setErrorModal((prev) => ({ ...prev, visible: false }))}
+              style={{ minWidth: 120, borderRadius: 8 }}
+            >
+              Compris
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+
         <Dialog visible={infoModalVisible} onDismiss={() => setInfoModalVisible(false)}>
           <Dialog.Title style={{ textAlign: 'center' }}>Informations</Dialog.Title>
           <Dialog.Content style={styles.dialogContent}>

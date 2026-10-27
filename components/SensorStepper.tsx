@@ -64,7 +64,7 @@ export default function WeeklyStepper({
           {days.map((day, index) => {
             const status = getDayStatus(day, index)
             const isLast = index === days.length - 1
-            const nextStatus = days[index + 1]
+            const nextStatus = !isLast ? days[index + 1].status : 'empty'
             const isCurrentDay = index === currentDayIndex
             const isTogglable = day.isTogglable
 
@@ -135,7 +135,7 @@ export default function WeeklyStepper({
                     style={[
                       styles.connector,
                       {
-                        backgroundColor: status !== nextStatus ? theme.colors.outlineVariant : status === 'done' ? GREEN_COLOR : RED_COLOR
+                        backgroundColor: status !== nextStatus ? theme.colors.outlineVariant : status === 'done' ? GREEN_COLOR : status === 'not-done' ? RED_COLOR : theme.colors.outlineVariant
                       }
                     ]}
                   />

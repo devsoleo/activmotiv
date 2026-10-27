@@ -137,6 +137,10 @@ class ImagesActivity : ComponentActivity() {
                 } catch (e: Exception) {
                     Log.e("ImagesActivity", "Error syncing SAM images: ${e.message}")
                 }
+            } else {
+                Api.clearStaticCache(applicationContext)
+                finish()
+                return@launch
             }
 
             val hiddenMap = api.getHiddenImagesMap()

@@ -80,7 +80,10 @@ class Api(private val ctx: Context) {
         val prefs = ctx.getSharedPreferences("activmotiv_prefs", Context.MODE_PRIVATE)
 
         return try {
-            val token = getAccessToken() ?: return prefs.getBoolean("popups_enabled", false)
+            val token = getAccessToken() ?: run {
+                clearStaticCache(ctx)
+                return false
+            }
             val response = get("/popups/status", token)
             val json = JSONObject(response)
             val popups = json.optBoolean("popups", false)
@@ -97,57 +100,20 @@ class Api(private val ctx: Context) {
     }
 
     suspend fun getHiddenImagesMap(): Map<Int, Boolean> {
-        val hiddenMap = mutableMapOf<Int, Boolean>()
-        try {
-            val asyncStorage = StorageModule.getStorageInstance(ctx.applicationContext)
-            val entries = asyncStorage.getValues(listOf("cache_sam"))
-            val cacheSamStr = entries.firstOrNull { it.key == "cache_sam" }?.value
-            if (!cacheSamStr.isNullOrEmpty()) {
-                val trimmed = cacheSamStr.trim()
-                if (trimmed.startsWith("[")) {
-                    val array = JSONArray(trimmed)
-                    for (i in 0 until array.length()) {
-                        val item = array.getJSONObject(i)
-                        val imageId = item.optInt("image", -1)
-                        val hidden = item.optBoolean("hidden", false)
-                        if (imageId != -1) {
-                            hiddenMap[imageId] = hidden
-                        }
-                    }
-                } else if (trimmed.startsWith("{")) {
-                    val obj = JSONObject(trimmed)
-                    val keys = obj.keys()
-                    while (keys.hasNext()) {
-                        val key = keys.next()
-                        val item = obj.optJSONObject(key)
-                        if (item != null) {
-                            val imageId = item.optInt("image", key.toIntOrNull() ?: -1)
-                            val hidden = item.optBoolean("hidden", false)
-                            if (imageId != -1) {
-                                hiddenMap[imageId] = hidden
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("Api", "Error reading cache_sam from AsyncStorage: ${e.message}", e)
-        }
-        return hiddenMap
+        return syncSamImages()
     }
 
     suspend fun syncSamImages(): Map<Int, Boolean> {
-        val asyncStorage = StorageModule.getStorageInstance(ctx.applicationContext)
         val hiddenMap = mutableMapOf<Int, Boolean>()
 
         return try {
-            val token = getAccessToken() ?: return getHiddenImagesMap()
+            val token = getAccessToken() ?: run {
+                clearStaticCache(ctx)
+                return emptyMap()
+            }
             val response = get("/sam/images", token)
             val json = JSONObject(response)
             val imagesArray = json.optJSONArray("images") ?: JSONArray()
-
-            // Update AsyncStorage 'cache_sam' key directly
-            asyncStorage.setValues(listOf(Entry("cache_sam", imagesArray.toString())))
 
             for (i in 0 until imagesArray.length()) {
                 val item = imagesArray.getJSONObject(i)
@@ -158,7 +124,7 @@ class Api(private val ctx: Context) {
                 }
             }
 
-            // Pre-cache unhidden images in background
+            // Pre-download unhidden images in background
             GlobalScope.launch(Dispatchers.IO) {
                 for ((imageId, hidden) in hiddenMap) {
                     if (!hidden) {
@@ -171,13 +137,27 @@ class Api(private val ctx: Context) {
             hiddenMap
         } catch (e: Exception) {
             Log.e("Api", "Error syncing SAM images from server: ${e.message}", e)
-            getHiddenImagesMap()
+            emptyMap()
         }
     }
 
     companion object {
         const val STATIC_BASE_URL = "https://activmotiv.fr/static/"
         const val STATIC_API_KEY = "b4b01d6c7472362a30ac5470aac7f6be"
+
+        fun clearStaticCache(ctx: Context) {
+            try {
+                val cacheDir = File(ctx.cacheDir, "static_cache")
+                if (cacheDir.exists()) {
+                    cacheDir.deleteRecursively()
+                }
+                val prefs = ctx.getSharedPreferences("activmotiv_prefs", Context.MODE_PRIVATE)
+                prefs.edit().clear().apply()
+                Log.d("Api", "Kotlin static_cache and activmotiv_prefs cleared successfully")
+            } catch (e: Exception) {
+                Log.e("Api", "Error clearing Kotlin cache: ${e.message}", e)
+            }
+        }
 
         fun getStaticImageUrl(relativePath: String): String {
             return "$STATIC_BASE_URL$relativePath?key=$STATIC_API_KEY"

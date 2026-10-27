@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { StyleSheet, View, Dimensions, ScrollView } from 'react-native'
+import { StyleSheet, View, Dimensions, ScrollView, Alert } from 'react-native'
 import { Image as ExpoImage } from 'expo-image'
-import { Text, Button, Card, IconButton, useTheme, List, Divider, Snackbar } from 'react-native-paper'
+import { Text, Button, Card, IconButton, useTheme, List, Snackbar } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import { getNetworkStateAsync } from 'expo-network'
+import { useQueryClient } from '@tanstack/react-query'
 import { Buffer } from 'buffer'
 import { useSession } from '@/contexts/auth'
-import { api } from '@/services/api'
+import { useReminders, useUpdateReminders, useSaveSamBatch } from '@/hooks/useOnboardingQueries'
 import { TimePickerModal, registerTranslation, fr } from 'react-native-paper-dates'
 import { illustrationsList, valenceList, arousalList, valenceDarkList, arousalDarkList, apExerciceImages, apLoisirsImages, apTransportsActifsImages, usAccomplissementImages, usAnimauxImages, usNatureImages, usPlaisirImages, usRelationSocialeImages } from '@/constants/images'
 import ImageSelection from './components/ImageSelection'
@@ -62,7 +61,8 @@ export default function OnboardingScreen() {
   const activeValenceList = theme.dark ? valenceDarkList : valenceList
   const activeArousalList = theme.dark ? arousalDarkList : arousalList
   const router = useRouter()
-  const { accessToken } = useSession()
+  const queryClient = useQueryClient()
+  const { signOut, accessToken } = useSession()
   const [step, setStep] = useState(0)
 
   // Attach global index (position in illustrationsList) to category items
@@ -78,9 +78,9 @@ export default function OnboardingScreen() {
   const apLoisirsCategories = attachIndices(apLoisirsImages)
   const apTransportsActifsCategories = attachIndices(apTransportsActifsImages)
 
-  const apExerciceIndices = apExerciceCategories.map((item) => item.globalIndex)
-  const apLoisirsIndices = apLoisirsCategories.map((item) => item.globalIndex)
-  const apTransportsActifsIndices = apTransportsActifsCategories.map((item) => item.globalIndex)
+  const apExerciceIndices = new Set(apExerciceCategories.map((item) => item.globalIndex))
+  const apLoisirsIndices = new Set(apLoisirsCategories.map((item) => item.globalIndex))
+  const apTransportsActifsIndices = new Set(apTransportsActifsCategories.map((item) => item.globalIndex))
 
   const posImages = [...usAccomplissementImages, ...usAnimauxImages, ...usNatureImages, ...usPlaisirImages, ...usRelationSocialeImages]
 
@@ -116,36 +116,19 @@ export default function OnboardingScreen() {
     }
   }, [])
 
+  const { data: initialRemindersData } = useReminders()
+  const saveRemindersMutation = useUpdateReminders()
+  const saveSamMutation = useSaveSamBatch()
+
   useEffect(() => {
-    if (!accessToken) return
-    const loadSavedReminders = async () => {
-      try {
-        const decoded = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())
-        const uid = decoded['uid']
-        if (!uid) return
-
-        const cached = await AsyncStorage.getItem(`user_reminders_${uid}`)
-        if (cached) {
-          const parsed = JSON.parse(cached)
-          if (parsed && parsed.FORM && parsed.SENSOR) {
-            setReminders(parsed)
-          }
-        }
-
-        const res = await api.get('/reminders')
-        if (res.status === 200 && res.data) {
-          const apiReminders: RemindersState = {
-            FORM: { ...DEFAULT_REMINDERS.FORM, ...(res.data.FORM || {}) },
-            SENSOR: { ...DEFAULT_REMINDERS.SENSOR, ...(res.data.SENSOR || {}) },
-          }
-          setReminders(apiReminders)
-        }
-      } catch (e) {
-        console.warn('Could not load existing reminders in onboarding:', e)
+    if (initialRemindersData) {
+      const apiReminders: RemindersState = {
+        FORM: { ...DEFAULT_REMINDERS.FORM, ...(initialRemindersData.FORM || {}) },
+        SENSOR: { ...DEFAULT_REMINDERS.SENSOR, ...(initialRemindersData.SENSOR || {}) },
       }
+      setReminders(apiReminders)
     }
-    loadSavedReminders()
-  }, [accessToken])
+  }, [initialRemindersData])
 
   const handleConfirmTime = ({ hours, minutes }: { hours: number; minutes: number }) => {
     if (!activePicker) return
@@ -189,8 +172,6 @@ export default function OnboardingScreen() {
       }
       setIsSubmitting(true)
       try {
-        const decoded = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())
-        const uid = decoded['uid']
 
         // 1. Build rating data for ALL illustrations using 1-based index (i + 1)
         const finalSamCache = illustrationsList.map((_, i) => {
@@ -206,26 +187,31 @@ export default function OnboardingScreen() {
           }
         })
 
-        // Write SAM gallery state and onboarding progress to local cache
-        await AsyncStorage.setItem('cache_sam', JSON.stringify(finalSamCache))
-        await AsyncStorage.setItem(`onboarded_${uid}`, 'true')
-        await AsyncStorage.setItem(`user_reminders_${uid}`, JSON.stringify(reminders))
-
-        // Save to server in batch if connected
-        const networkState = await getNetworkStateAsync()
-        if (networkState.isConnected) {
+        // Save to server/cache in batch
+        try {
           await Promise.all([
-            api.put('/sam/batch', { items: finalSamCache }),
-            api.put('/reminders', reminders),
-          ]).catch((err) => {
-            console.error('Failed to sync onboarding data with server:', err)
-          })
+            saveSamMutation.mutateAsync(finalSamCache),
+            saveRemindersMutation.mutateAsync(reminders),
+          ])
+          // Re-fetch onboarding status directly from the API to verify completion
+          await queryClient.refetchQueries({ queryKey: ['auth', 'onboarding-status'] })
+          router.replace('/(tabs)')
+        } catch (err) {
+          console.error('Failed to sync onboarding data with server:', err)
+          Alert.alert(
+            "Erreur de connexion",
+            "Impossible d'enregistrer l'onboarding en raison d'un problème réseau. Veuillez vérifier votre connexion Internet et réessayez.",
+            [{ text: "Réessayer", onPress: () => handleNext() }]
+          )
+          return
         }
-
-        router.replace('/(tabs)')
       } catch (e) {
         console.error('Failed to complete onboarding:', e)
-        router.replace('/(tabs)')
+        Alert.alert(
+          "Erreur de connexion",
+          "Une erreur est survenue lors de l'onboarding. Veuillez réessayez.",
+          [{ text: "Réessayer", onPress: () => handleNext() }]
+        )
       } finally {
         setIsSubmitting(false)
       }
@@ -248,14 +234,14 @@ export default function OnboardingScreen() {
       if (prev.includes(globalIndex)) {
         return prev.filter(i => i !== globalIndex)
       } else {
-        if (apExerciceIndices.includes(globalIndex)) {
-          const count = prev.filter(i => apExerciceIndices.includes(i)).length
+        if (apExerciceIndices.has(globalIndex)) {
+          const count = prev.filter(i => apExerciceIndices.has(i)).length
           if (count >= 5) return prev
-        } else if (apLoisirsIndices.includes(globalIndex)) {
-          const count = prev.filter(i => apLoisirsIndices.includes(i)).length
+        } else if (apLoisirsIndices.has(globalIndex)) {
+          const count = prev.filter(i => apLoisirsIndices.has(i)).length
           if (count >= 5) return prev
-        } else if (apTransportsActifsIndices.includes(globalIndex)) {
-          const count = prev.filter(i => apTransportsActifsIndices.includes(i)).length
+        } else if (apTransportsActifsIndices.has(globalIndex)) {
+          const count = prev.filter(i => apTransportsActifsIndices.has(i)).length
           if (count >= 5) return prev
         }
         return [...prev, globalIndex]
@@ -291,7 +277,7 @@ export default function OnboardingScreen() {
     if (step === 0) return false
     if (step === 1) return selectedAPImages.length !== targetAPCount
     if (step === 2) return selectedPOSImages.length !== targetPOSCount
-    if (step === 3) return selectedImages.some(index => !ratings[index] || ratings[index].valence === null || ratings[index].arousal === null)
+    if (step === 3) return selectedImages.some(index => ratings[index]?.valence === null || ratings[index]?.arousal === null)
     return false
   }
 
@@ -355,6 +341,28 @@ export default function OnboardingScreen() {
                   </View>
                 </Card.Content>
               </Card>
+
+              <View style={{ marginTop: 24, gap: 12 }}>
+                <Button
+                  mode="contained"
+                  onPress={handleNext}
+                  disabled={isNextDisabled()}
+                  loading={isSubmitting}
+                  style={styles.navButton}
+                >
+                  Suivant
+                </Button>
+
+                <Button
+                  mode="outlined"
+                  textColor={theme.colors.error}
+                  icon="logout"
+                  onPress={signOut}
+                  style={[styles.navButton, { borderColor: theme.colors.error }]}
+                >
+                  Se déconnecter
+                </Button>
+              </View>
             </View>
           )}
 
@@ -482,26 +490,26 @@ export default function OnboardingScreen() {
         </ScrollView>
       </View>
 
-      <View style={[styles.navigationFooter, { backgroundColor: theme.colors.background, borderTopColor: theme.colors.outlineVariant }]}>
-        <View style={styles.footerLeft}>
-          {step > 0 && (
+      {step > 0 && (
+        <View style={[styles.navigationFooter, { backgroundColor: theme.colors.background, borderTopColor: theme.colors.outlineVariant }]}>
+          <View style={styles.footerLeft}>
             <Button mode="outlined" onPress={handleBack} disabled={isSubmitting} style={styles.navButton}>
               Retour
             </Button>
-          )}
+          </View>
+          <View style={styles.footerRight}>
+            <Button
+              mode="contained"
+              onPress={handleNext}
+              disabled={isNextDisabled()}
+              loading={isSubmitting}
+              style={styles.navButton}
+            >
+              {isLastStep ? "Commencer" : "Suivant"}
+            </Button>
+          </View>
         </View>
-        <View style={styles.footerRight}>
-          <Button
-            mode="contained"
-            onPress={handleNext}
-            disabled={isNextDisabled()}
-            loading={isSubmitting}
-            style={styles.navButton}
-          >
-            {isLastStep ? "Commencer" : "Suivant"}
-          </Button>
-        </View>
-      </View>
+      )}
 
       {activePicker && (
         <TimePickerModal

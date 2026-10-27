@@ -2,8 +2,11 @@ import { useEffect, useRef } from 'react'
 import { Stack, useRouter } from 'expo-router'
 import { PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper'
 import { useColorScheme } from 'react-native'
+import { StatusBar } from 'expo-status-bar'
 import * as Notifications from 'expo-notifications'
 import { AuthProvider } from '@/contexts/auth'
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
+import { queryClient, queryPersister } from '@/services/queryClient'
 
 console.log(process.env.EXPO_PUBLIC_API_URL)
 
@@ -24,8 +27,7 @@ function NotificationObserver() {
 
   useEffect(() => {
     if (
-      lastResponse &&
-      lastResponse.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER &&
+      lastResponse?.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER &&
       lastResponse.notification.request.identifier !== handledResponseId.current
     ) {
       handledResponseId.current = lastResponse.notification.request.identifier
@@ -145,11 +147,16 @@ export default function RootLayout() {
   const theme = colorScheme === 'dark' ? darkTheme : lightTheme
 
   return (
-    <PaperProvider theme={theme}>
-      <AuthProvider>
-        <NotificationObserver />
-        <Stack screenOptions={{ headerShown: false }} />
-      </AuthProvider>
-    </PaperProvider>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{ persister: queryPersister }}
+    >
+      <PaperProvider theme={theme}>
+        <AuthProvider>
+          <NotificationObserver />
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }} />
+        </AuthProvider>
+      </PaperProvider>
+    </PersistQueryClientProvider>
   )
 }

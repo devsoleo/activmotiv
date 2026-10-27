@@ -20,10 +20,12 @@ api.interceptors.request.use(async (config) => {
   config.baseURL = process.env.EXPO_PUBLIC_API_URL || config.baseURL
   const accessToken = await getStorageItem('accessToken')
 
+  const isPublicRoute = config.url?.includes('/auth/login') || config.url?.includes('/auth/register')
+
   if (accessToken) {
     config.headers['Authorization'] = `Bearer ${accessToken}`
-  } else {
-    callSignOut()
+  } else if (!isPublicRoute) {
+    await callSignOut()
   }
 
   return config
@@ -33,7 +35,7 @@ api.interceptors.response.use((res) => {
     return res
   },
   (error) => {
-    if (error.response && error.response.status === 412) {
+    if (error.response?.status === 412) {
       console.log("Une mise à jour est nécessaire")
       callSignOut()
     }
