@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, StyleSheet, TouchableOpacity } from 'react-native'
 import { Text, Card, useTheme, Icon } from 'react-native-paper'
+import { useNetworkState } from 'expo-network'
 
 export type DayStatus = 'done' | 'not-done' | 'empty'
 
@@ -15,15 +16,24 @@ interface WeeklyStepperProps {
   days: DayStep[]
   icon?: string
   onDayPress?: (dayIndex: number) => void
+  disabled?: boolean
+  disabledReason?: string
 }
 
 export default function WeeklyStepper({
   title,
   days,
   icon,
-  onDayPress
+  onDayPress,
+  disabled,
+  disabledReason
 }: Readonly<WeeklyStepperProps>) {
   const theme = useTheme()
+  const networkState = useNetworkState()
+
+  const isOffline = networkState.isConnected === false || networkState.isInternetReachable === false
+  const isDisabled = disabled ?? isOffline
+  const reason = disabledReason || "Modifications bloquées : vous êtes hors ligne. Connectez-vous à Internet pour mettre à jour le port du capteur."
 
   const currentJsDay = new Date().getDay()
   const currentDayIndex = currentJsDay === 0 ? 6 : currentJsDay - 1
@@ -60,13 +70,22 @@ export default function WeeklyStepper({
           </View>
         </View>
 
-        <View style={styles.stepperRow}>
+        {isDisabled && (
+          <View style={[styles.offlineBanner, { backgroundColor: theme.colors.errorContainer }]}>
+            <Icon source="wifi-off" size={18} color={theme.colors.onErrorContainer} />
+            <Text variant="bodySmall" style={[styles.offlineBannerText, { color: theme.colors.onErrorContainer }]}>
+              {reason}
+            </Text>
+          </View>
+        )}
+
+        <View style={[styles.stepperRow, isDisabled && styles.disabledStepperRow]}>
           {days.map((day, index) => {
             const status = getDayStatus(day, index)
             const isLast = index === days.length - 1
             const nextStatus = !isLast ? days[index + 1].status : 'empty'
             const isCurrentDay = index === currentDayIndex
-            const isTogglable = day.isTogglable
+            const isTogglable = !isDisabled && day.isTogglable
 
             let circleBg
             let circleBorder
@@ -207,5 +226,21 @@ const styles = StyleSheet.create({
     marginTop: 12.5,
     marginHorizontal: 2,
     borderRadius: 1.5
+  },
+  disabledStepperRow: {
+    opacity: 0.5
+  },
+  offlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 16
+  },
+  offlineBannerText: {
+    flex: 1,
+    fontWeight: '500'
   }
 })

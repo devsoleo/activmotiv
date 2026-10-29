@@ -23,7 +23,7 @@ export default function SensorScreen() {
   const checkSensorStatus = async () => {
     try {
       const response = await api.get('/sensors/today')
-      if (response.data && response.data.confirmed) {
+      if (response.data?.confirmed) {
         setConfirmed(true)
       }
     } catch (err) {
@@ -37,7 +37,7 @@ export default function SensorScreen() {
     setLoading(true)
     setError(null)
     try {
-      await api.post('/sensors', { timestamp: Date.now() })
+      await api.post('/sensors/validate/today')
       setConfirmed(true)
     } catch (err) {
       console.error('Erreur confirmation capteur:', err)

@@ -4,15 +4,16 @@ import { ScrollView, StyleSheet, View, Linking } from 'react-native'
 import { Appbar, TextInput, Text, Button, Snackbar, useTheme, Divider } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Clipboard from '@react-native-clipboard/clipboard'
-import { Buffer } from 'buffer'
-import { useSession } from '@/contexts/auth'
 import { api } from '@/services/api'
-import { getNetworkStateAsync } from 'expo-network'
+import { getNetworkStateAsync, useNetworkState } from 'expo-network'
+import { useUserProfile } from '@/hooks/useTrackingQueries'
 
 export default function Profile() {
   const router = useRouter()
-  const { accessToken } = useSession()
+  const { data: userProfile } = useUserProfile()
   const theme = useTheme()
+  const networkState = useNetworkState()
+  const isOffline = networkState.isConnected === false || networkState.isInternetReachable === false
 
   const [currentPassword, setCurrentPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -27,14 +28,7 @@ export default function Profile() {
 
   const dismissSnackbar = () => setVisible(false)
 
-  let uid = ''
-  if (accessToken != null && accessToken !== undefined) {
-    try {
-      uid = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())['uid'] || ''
-    } catch {
-      uid = ''
-    }
-  }
+  const uid = userProfile?.uid || ''
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -61,11 +55,17 @@ export default function Profile() {
         <Divider style={{ marginVertical: 8 }} />
 
         <Text variant="titleMedium" style={styles.title}>Modifier mon mot de passe</Text>
+        {isOffline && (
+          <Text style={{ color: theme.colors.error, marginHorizontal: 16, marginTop: 8 }} variant="bodyMedium">
+            Vous devez être connecté à Internet pour modifier votre mot de passe.
+          </Text>
+        )}
         <TextInput
           label="Mot de passe actuel"
           value={currentPassword}
           onChangeText={setCurrentPassword}
           secureTextEntry={isCurrentPasswordSecure}
+          disabled={isOffline}
           right={<TextInput.Icon onPress={() => { isCurrentPasswordSecure ? setIsCurrentPasswordSecure(false) : setIsCurrentPasswordSecure(true) }} icon={isCurrentPasswordSecure ? 'eye' : 'eye-off'} />}
           style={{ margin: 16 }}
         />
@@ -74,6 +74,7 @@ export default function Profile() {
           value={newPassword}
           onChangeText={setNewPassword}
           secureTextEntry={isNewPasswordSecure}
+          disabled={isOffline}
           right={<TextInput.Icon onPress={() => { isNewPasswordSecure ? setIsNewPasswordSecure(false) : setIsNewPasswordSecure(true) }} icon={isNewPasswordSecure ? 'eye' : 'eye-off'} />}
           style={{ margin: 16 }}
         />
@@ -82,12 +83,13 @@ export default function Profile() {
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry={isConfirmPasswordSecure}
+          disabled={isOffline}
           right={<TextInput.Icon onPress={() => { isConfirmPasswordSecure ? setIsConfirmPasswordSecure(false) : setIsConfirmPasswordSecure(true) }} icon={isConfirmPasswordSecure ? 'eye' : 'eye-off'} />}
           style={{ margin: 16 }}
         />
-        <Button mode="outlined" disabled={(newPassword.length === 0) || newPassword !== confirmPassword} style={{ margin: 16 }} onPress={async () => {
-          const networkState = await getNetworkStateAsync()
-          if (!networkState.isConnected) {
+        <Button mode="outlined" disabled={isOffline || (newPassword.length === 0) || newPassword !== confirmPassword} style={{ margin: 16 }} onPress={async () => {
+          const currentNetworkState = await getNetworkStateAsync()
+          if (!currentNetworkState.isConnected || currentNetworkState.isInternetReachable === false) {
             setSnackbarText('Action impossible hors-ligne !')
             setVisible(true)
             return

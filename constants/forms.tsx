@@ -15,11 +15,11 @@ const attitudeInstrumentaleList = [
 ]
 
 const intentionList = [
-  { uid: 'i1', content: "Aujourd'hui, j'ai l'intention d'être physiquement actif :", answers: [{ minimum: "Pas du tout", maximum: "Tout à fait", size: 7 }] },
-  { uid: 'i2', content: "Aujourd'hui, je prévois de pratiquer une activité physique :", answers: [{ minimum: "Pas du tout", maximum: "Tout à fait", size: 7 }] },
-  { uid: 'i3', content: "Aujourd'hui, je compte pratiquer une activité physique :", answers: [{ minimum: "Pas du tout", maximum: "Tout à fait", size: 7 }] },
-  { uid: 'i4', content: "Aujourd'hui, je suis déterminé(e) à être physiquement actif :", answers: [{ minimum: "Pas du tout", maximum: "Tout à fait", size: 7 }] },
-  { uid: 'i5', content: "Aujourd'hui, je pense pratiquer une activité physique :", answers: [{ minimum: "Pas du tout", maximum: "Tout à fait", size: 7 }] }
+  { uid: 'in1', content: "Aujourd'hui, j'ai l'intention d'être physiquement actif :", answers: [{ minimum: "Pas du tout", maximum: "Tout à fait", size: 7 }] },
+  { uid: 'in2', content: "Aujourd'hui, je prévois de pratiquer une activité physique :", answers: [{ minimum: "Pas du tout", maximum: "Tout à fait", size: 7 }] },
+  { uid: 'in3', content: "Aujourd'hui, je compte pratiquer une activité physique :", answers: [{ minimum: "Pas du tout", maximum: "Tout à fait", size: 7 }] },
+  { uid: 'in4', content: "Aujourd'hui, je suis déterminé(e) à être physiquement actif :", answers: [{ minimum: "Pas du tout", maximum: "Tout à fait", size: 7 }] },
+  { uid: 'in5', content: "Aujourd'hui, je pense pratiquer une activité physique :", answers: [{ minimum: "Pas du tout", maximum: "Tout à fait", size: 7 }] }
 ]
 
 export { attitudeAffectiveList, attitudeInstrumentaleList, intentionList }

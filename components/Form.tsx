@@ -19,7 +19,7 @@ export interface FormProps {
   onSubmit: (results: Array<{ question: string; answer: any }>) => void
 }
 
-export default function Form({ title, list, onSubmit }: FormProps) {
+export default function Form({ title, list, onSubmit }: Readonly<FormProps>) {
   const theme = useTheme()
   const [hasSubmit, setHasSubmit] = useState(false)
   const [infoModalVisible, setInfoModalVisible] = useState(true)
@@ -111,6 +111,7 @@ export default function Form({ title, list, onSubmit }: FormProps) {
             const cardAns = answers[index]
             const val = (Array.isArray(cardAns) && cardAns.length === 1) ? cardAns[0] : cardAns
             return {
+              uid: item.uid,
               question: item.content,
               answer: val
             }
@@ -134,26 +135,26 @@ export default function Form({ title, list, onSubmit }: FormProps) {
               <Text variant="bodyMedium">
                 • <Text style={{ fontWeight: 'bold' }}>Échelle de réponse</Text> : Les termes à chaque extrémité indiquent le niveau minimum (1) et maximum (7) d'accord ou de ressenti.
               </Text>
-                <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>
-                  Lisez attentivement chaque phrase et répondez sur l'échelle située en dessous en sélectionnant un nombre correspondant le mieux à ce que vous pensez.
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>
+                Lisez attentivement chaque phrase et répondez sur l'échelle située en dessous en sélectionnant un nombre correspondant le mieux à ce que vous pensez.
+              </Text>
+
+              <View
+                style={[
+                  styles.quoteContainer,
+                  {
+                    backgroundColor: theme.colors.surfaceVariant,
+                    borderLeftColor: theme.colors.primary
+                  }
+                ]}
+              >
+                <Text variant="bodyMedium" style={[styles.quoteText, { color: theme.colors.onSurfaceVariant }]}>
+                  « L’activité physique se réfère à tout mouvement corporel produit par les muscles squelettiques qui requiert une dépense d’énergie. L’activité physique désigne tous les mouvements que l’on effectue notamment dans le cadre des loisirs, pour se déplacer d’un endroit à l’autre, sur le lieu de travail ou lors des tâches ménagères. »
                 </Text>
-      
-                <View
-                  style={[
-                    styles.quoteContainer,
-                    {
-                      backgroundColor: theme.colors.surfaceVariant,
-                      borderLeftColor: theme.colors.primary
-                    }
-                  ]}
-                >
-                  <Text variant="bodyMedium" style={[styles.quoteText, { color: theme.colors.onSurfaceVariant }]}>
-                    « L’activité physique se réfère à tout mouvement corporel produit par les muscles squelettiques qui requiert une dépense d’énergie. L’activité physique désigne tous les mouvements que l’on effectue notamment dans le cadre des loisirs, pour se déplacer d’un endroit à l’autre, sur le lieu de travail ou lors des tâches ménagères. »
-                  </Text>
-                  <Text variant="labelMedium" style={[styles.quoteSource, { color: theme.colors.primary }]}>
-                    — OMS, 2024
-                  </Text>
-                </View>
+                <Text variant="labelMedium" style={[styles.quoteSource, { color: theme.colors.primary }]}>
+                  — OMS, 2024
+                </Text>
+              </View>
             </ScrollView>
           </Dialog.ScrollArea>
           <Dialog.Actions>
