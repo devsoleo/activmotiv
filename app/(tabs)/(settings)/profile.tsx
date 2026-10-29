@@ -4,14 +4,13 @@ import { ScrollView, StyleSheet, View, Linking } from 'react-native'
 import { Appbar, TextInput, Text, Button, Snackbar, useTheme, Divider } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Clipboard from '@react-native-clipboard/clipboard'
-import { Buffer } from 'buffer'
-import { useSession } from '@/contexts/auth'
 import { api } from '@/services/api'
 import { getNetworkStateAsync } from 'expo-network'
+import { useUserProfile } from '@/hooks/useTrackingQueries'
 
 export default function Profile() {
   const router = useRouter()
-  const { accessToken } = useSession()
+  const { data: userProfile } = useUserProfile()
   const theme = useTheme()
 
   const [currentPassword, setCurrentPassword] = useState('')
@@ -27,14 +26,7 @@ export default function Profile() {
 
   const dismissSnackbar = () => setVisible(false)
 
-  let uid = ''
-  if (accessToken != null && accessToken !== undefined) {
-    try {
-      uid = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())['uid'] || ''
-    } catch {
-      uid = ''
-    }
-  }
+  const uid = userProfile?.uid || ''
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>

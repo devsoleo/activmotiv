@@ -10,6 +10,13 @@ export function useAdminStatus() {
   })
 }
 
+export function useUserProfile() {
+  return useQuery({
+    queryKey: ['auth', 'user-profile'],
+    queryFn: () => api.get('/auth/me').then((res) => res.data),
+  })
+}
+
 export function useTrackingData() {
   return useQuery({
     queryKey: ['tracking', 'analytics'],

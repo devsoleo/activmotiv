@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router'
 
 import { setSignOut } from './authManager'
 import { clearAllCaches } from '@/services/storage'
-import { Alert } from 'react-native'
+import { api } from '@/services/api'
 
 type AuthContextType = {
   signIn: (accessToken: string) => void
@@ -28,7 +28,7 @@ export function useSession() {
   return value
 }
 
-export function AuthProvider({ children }: PropsWithChildren) {
+export function AuthProvider({ children }: Readonly<PropsWithChildren>) {
   const [[_, accessToken], setAccessToken] = useStorageState('accessToken')
 
   const router = useRouter()
@@ -39,6 +39,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
         setAccessToken(accessToken)
       },
       signOut: async () => {
+        try {
+          await api.post('/auth/logout')
+        } catch {
+          // Ignore network / logout errors
+        }
         await clearAllCaches()
         setAccessToken(null)
         router.replace('/(auth)/login')
