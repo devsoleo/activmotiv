@@ -1,6 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { syncWithServer, syncSteppersWithServer } from '@/services/cache/tracking'
 import { syncFormStatusWithServer } from '@/services/cache/forms'
+import { api } from '@/services/api'
+
+export function useAdminStatus() {
+  return useQuery({
+    queryKey: ['auth', 'admin-status'],
+    queryFn: () => api.get('/auth/me').then((res) => Boolean(res.data?.isAdmin)),
+  })
+}
 
 export function useTrackingData() {
   return useQuery({

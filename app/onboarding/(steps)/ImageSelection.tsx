@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { StyleSheet, View, TouchableOpacity, Modal } from 'react-native'
-import { Text, IconButton } from 'react-native-paper'
+import { StyleSheet, View, TouchableOpacity, Modal, Dimensions } from 'react-native'
+import { Text, IconButton, useTheme } from 'react-native-paper'
 import { Image } from 'expo-image'
 
 interface Category {
@@ -17,8 +17,6 @@ interface ImageSelectionProps {
   toggleImage: (globalIndex: number) => void
   targetCount: number
   selectedCount: number
-  theme: any
-  screenWidth: number
 }
 
 export default function ImageSelection({
@@ -29,17 +27,16 @@ export default function ImageSelection({
   toggleImage,
   targetCount,
   selectedCount,
-  theme,
-  screenWidth
 }: ImageSelectionProps) {
   const [previewSource, setPreviewSource] = useState<any>(null)
+  const theme = useTheme()
+  const screenWidth = Dimensions.get('window').width
 
   // Styles for responsive selection grid
   const gridColumns = 3
   const gridPadding = 8
   const gridMargin = 4
   const gridImageSize = (screenWidth - (gridPadding * 2 + gridMargin * 2 * gridColumns + 32)) / gridColumns
-
   const isTargetMet = selectedCount === targetCount
 
   const counterLabel = (isTargetMet ? `Sélection prête : ${targetCount} images sélectionnées` : `Sélectionnez vos images (${selectedCount} / ${targetCount})`)
@@ -49,8 +46,10 @@ export default function ImageSelection({
       <Text variant="headlineSmall" style={[styles.stepTitle, { color: theme.colors.primary }]}>
         {title}
       </Text>
-      
-      {description}
+
+      <Text style={[styles.descriptionText, { color: theme.colors.onSurfaceVariant }]}>
+        {description}
+      </Text>
 
       <View style={[
         styles.counterBadge,

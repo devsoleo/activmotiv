@@ -1,5 +1,5 @@
 import { View, StyleSheet, ScrollView, AppState, AppStateStatus, Dimensions, Linking } from 'react-native'
-import { Text, Button, useTheme,  IconButton, Portal, Dialog } from 'react-native-paper'
+import { Text, Button, useTheme,  IconButton, Portal, Dialog, Card } from 'react-native-paper'
 import { BarChart } from "react-native-gifted-charts"
 import { useCallback, useState } from 'react'
 import { useFocusEffect } from 'expo-router'
@@ -8,34 +8,25 @@ import * as Notifications from 'expo-notifications'
 import * as Device from 'expo-device'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { api } from '@/services/api'
-import { useTrackingData, useFormStatus, useSensorSteppers, useFormSteppers } from '@/hooks/useTrackingQueries'
+import { useTrackingData, useFormStatus, useSensorSteppers, useFormSteppers, useAdminStatus } from '@/hooks/useTrackingQueries'
 import { enqueueSensorToggle } from '@/services/queue/sensors'
 import Task from '@/components/Task'
 import SensorStepper, { DayStep } from '@/components/SensorStepper'
 import FormStepper, { FormStep } from '@/components/FormStepper'
 
 function formatDuration(totalMilliseconds: number | null | undefined): string {
-  if (totalMilliseconds == null || Number.isNaN(totalMilliseconds) || totalMilliseconds <= 0) return '0s'
+  if (!totalMilliseconds || !Number.isFinite(totalMilliseconds) || totalMilliseconds <= 0) return '0s'
 
   const totalSeconds = Math.floor(totalMilliseconds / 1000)
-  const d = Math.floor(totalSeconds / (3600 * 24))
-  const h = Math.floor((totalSeconds % (3600 * 24)) / 3600)
-  const m = Math.floor((totalSeconds % 3600) / 60)
+  const d = Math.floor(totalSeconds / 86_400)
+  const h = Math.floor((totalSeconds % 86_400) / 3_600)
+  const m = Math.floor((totalSeconds % 3_600) / 60)
   const s = totalSeconds % 60
 
-  const parts: string[] = []
-
-  if (d > 0) {
-    parts.push(`${d}j`, `${h}h`, `${m}m`, `${s}s`)
-  } else if (h > 0) {
-    parts.push(`${h}h`, `${m}m`, `${s}s`)
-  } else if (m > 0) {
-    parts.push(`${m}m`, `${s}s`)
-  } else {
-    parts.push(`${s}s`)
-  }
-
-  return parts.join(' ')
+  if (d > 0) return `${d}j ${h}h ${m}m ${s}s`
+  if (h > 0) return `${h}h ${m}m ${s}s`
+  if (m > 0) return `${m}m ${s}s`
+  return `${s}s`
 }
 
 export default function TrackingScreen() {
@@ -44,12 +35,13 @@ export default function TrackingScreen() {
   const [infoModalVisible, setInfoModalVisible] = useState<boolean>(false)
 
   // React Query Hooks
+  const { data: isAdmin = false, refetch: refetchAdminStatus } = useAdminStatus()
   const { data: formStatusData, refetch: refetchFormStatus } = useFormStatus()
   const { data: sensorSteppersData, refetch: refetchSensorSteppers } = useSensorSteppers()
   const { data: formSteppersData, refetch: refetchFormSteppers } = useFormSteppers()
   const { data: trackingData, refetch: refetchTracking } = useTrackingData()
 
-  const formStatus = formStatusData || { inPhase: false, inTimeWindow: false, doneToday: false }
+  const formStatus = formStatusData || { inPhase: false, inTimeWindow: false, doneToday: false, nextDate: null }
 
   const defaultSensorDays: DayStep[] = ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((label) => ({
     label,
@@ -69,7 +61,7 @@ export default function TrackingScreen() {
   const handleToggleSensorDay = async (stepDayIndex: number) => {
     try {
       await enqueueSensorToggle(stepDayIndex)
-      refetchSensorSteppers()
+      await refetchSensorSteppers()
     } catch (e) {
       console.error("Error toggling sensor day:", stepDayIndex, e)
     }
@@ -90,7 +82,7 @@ export default function TrackingScreen() {
   const openingAmount = trackingData?.amount || 0
   const exposureDuration = trackingData?.duration || 0
   const barData = sanitizeOpeningData(trackingData?.opening || [])
-
+  
   const setupTelemetryAndNotifications = async () => {
     try {
       await Notifications.getDevicePushTokenAsync().then(async e => {
@@ -118,6 +110,7 @@ export default function TrackingScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      refetchAdminStatus()
       refetchFormStatus()
       refetchSensorSteppers()
       refetchFormSteppers()
@@ -126,6 +119,7 @@ export default function TrackingScreen() {
 
       const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
         if (nextAppState === 'active') {
+          refetchAdminStatus()
           refetchFormStatus()
           refetchSensorSteppers()
           refetchFormSteppers()
@@ -136,7 +130,7 @@ export default function TrackingScreen() {
       return () => {
         subscription.remove()
       }
-    }, [refetchFormStatus, refetchSensorSteppers, refetchFormSteppers, refetchTracking])
+    }, [refetchAdminStatus, refetchFormStatus, refetchSensorSteppers, refetchFormSteppers, refetchTracking])
   )
 
   return (
@@ -157,7 +151,7 @@ export default function TrackingScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
 
         {/* Section 1 : Questionnaires */}
-        {formStatus.inPhase && formStatus.inTimeWindow && !formStatus.doneToday && (
+        {(formStatus.inPhase && formStatus.inTimeWindow && !formStatus.doneToday) || isAdmin ? (
           <>
             <Text variant="titleLarge" style={[styles.sectionHeader, { color: theme.colors.primary }]}>
               Vos questionnaires à compléter
@@ -175,12 +169,20 @@ export default function TrackingScreen() {
               disabled={false}
             />
           </>
-        )}
-
-        {!formStatus.inPhase && (
-          <>
-          <Text>DEMAIN</Text>
-          </>
+        ) : (
+          <Card style={[styles.card, { marginTop: 20 }]} mode="outlined">
+            <Card.Content style={styles.nextFormCardContent}>
+              <View style={[styles.nextFormIconWrapper, { backgroundColor: theme.colors.primaryContainer }]}>
+                <IconButton icon="calendar-clock" size={20} iconColor={theme.colors.onPrimaryContainer} style={{ margin: 0 }} />
+              </View>
+              <View style={{ marginLeft: 12, flex: 1 }}>
+                <Text variant="titleMedium" style={{ fontWeight: 'bold' }}>Prochain questionnaire</Text>
+                <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+                  {`Disponible le ${new Date(formStatus.nextDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`}
+                </Text>
+              </View>
+            </Card.Content>
+          </Card>
         )}
 
         {/* Section 2 : Progression cette semaine */}

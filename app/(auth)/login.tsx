@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { StyleSheet, Platform, TouchableOpacity, Image, Dimensions, KeyboardAvoidingView, View, Linking } from 'react-native'
 import { TextInput, Button, Text, useTheme, IconButton, Portal, Dialog, Icon } from 'react-native-paper'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useSession } from '@/contexts/auth'
 import { api } from '@/services/api'
@@ -9,6 +10,7 @@ export default function LoginPage() {
   const router = useRouter()
   const { signIn } = useSession()
   const theme = useTheme()
+  const insets = useSafeAreaInsets()
 
   const [uid, setUid] = useState('')
   const [password, setPassword] = useState('')
@@ -101,7 +103,7 @@ export default function LoginPage() {
         icon="information-outline"
         size={24}
         iconColor={theme.colors.primary}
-        style={styles.infoButton}
+        style={[styles.infoButton, { top: Math.max(insets.top + 8, 16), right: Math.max(insets.right + 8, 16) }]}
         onPress={() => setInfoModalVisible(true)}
       />
 
@@ -211,8 +213,6 @@ const styles = StyleSheet.create({
   },
   infoButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 48 : 20,
-    right: 16,
     zIndex: 10,
   },
   input: {

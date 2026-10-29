@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react'
-import { StyleSheet, View, Dimensions, ScrollView, Alert } from 'react-native'
+import { StyleSheet, View, ScrollView, Alert, Linking, NativeSyntheticEvent, NativeScrollEvent } from 'react-native'
 import { Image as ExpoImage } from 'expo-image'
-import { Text, Button, Card, IconButton, useTheme, List, Snackbar } from 'react-native-paper'
+import { Text, Button, Card, useTheme, List, Snackbar } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQueryClient } from '@tanstack/react-query'
-import { Buffer } from 'buffer'
 import { useSession } from '@/contexts/auth'
 import { useReminders, useUpdateReminders, useSaveSamBatch } from '@/hooks/useOnboardingQueries'
 import { TimePickerModal, registerTranslation, fr } from 'react-native-paper-dates'
 import { illustrationsList, valenceList, arousalList, valenceDarkList, arousalDarkList, apExerciceImages, apLoisirsImages, apTransportsActifsImages, usAccomplissementImages, usAnimauxImages, usNatureImages, usPlaisirImages, usRelationSocialeImages } from '@/constants/images'
-import ImageSelection from './components/ImageSelection'
-import SAM from './components/SAM'
+import ImageSelection from './(steps)/ImageSelection'
+import PermissionsStep from './(steps)/PermissionsStep'
+import WelcomeStep from './(steps)/WelcomeStep'
+import Sam from './(steps)/Sam'
 
 registerTranslation('fr', fr)
 
@@ -58,11 +59,11 @@ const DEFAULT_REMINDERS: RemindersState = {
 
 export default function OnboardingScreen() {
   const theme = useTheme()
+  const { accessToken } = useSession()
   const activeValenceList = theme.dark ? valenceDarkList : valenceList
   const activeArousalList = theme.dark ? arousalDarkList : arousalList
   const router = useRouter()
   const queryClient = useQueryClient()
-  const { signOut, accessToken } = useSession()
   const [step, setStep] = useState(0)
 
   // Attach global index (position in illustrationsList) to category items
@@ -105,8 +106,34 @@ export default function OnboardingScreen() {
   const [snackbarText, setSnackbarText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const totalSteps = 5
-  const screenWidth = Dimensions.get('window').width
+  // Step 5: Permissions scroll state
+  const [hasScrolledPermissionsToBottom, setHasScrolledPermissionsToBottom] = useState(false)
+  const [isPermissionsAtBottom, setIsPermissionsAtBottom] = useState(false)
+  const [scrollViewHeight, setScrollViewHeight] = useState(0)
+  const [scrollContentHeight, setScrollContentHeight] = useState(0)
+
+  const checkPermissionsAtBottom = (layoutH: number, contentH: number, offsetY: number) => {
+    if (step === 5) {
+      const paddingToBottom = 35
+      const isAtBottom =
+        contentH <= layoutH ||
+        (layoutH > 0 && contentH > 0 && layoutH + offsetY >= contentH - paddingToBottom)
+
+      setIsPermissionsAtBottom(isAtBottom)
+      if (isAtBottom && !hasScrolledPermissionsToBottom) {
+        setHasScrolledPermissionsToBottom(true)
+      }
+    }
+  }
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (step === 5) {
+      const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent
+      checkPermissionsAtBottom(layoutMeasurement.height, contentSize.height, contentOffset.y)
+    }
+  }
+
+  const totalSteps = 6
   const isLastStep = step === totalSteps - 1
 
   useEffect(() => {
@@ -133,17 +160,7 @@ export default function OnboardingScreen() {
   const handleConfirmTime = ({ hours, minutes }: { hours: number; minutes: number }) => {
     if (!activePicker) return
 
-    let isAdmin = false
-    if (accessToken) {
-      try {
-        const payload = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())
-        isAdmin = payload['team'] === 0
-      } catch (e) {
-        console.log(e)
-      }
-    }
-
-    if (!isAdmin && (hours < 5 || hours > 13 || (hours === 13 && minutes > 0))) {
+    if (hours < 5 || hours > 13 || (hours === 13 && minutes > 0)) {
       setActivePicker(null)
       setSnackbarText("L'heure de rappel doit être comprise entre 05h00 et 13h00.")
       setSnackbarVisible(true)
@@ -277,7 +294,15 @@ export default function OnboardingScreen() {
     if (step === 0) return false
     if (step === 1) return selectedAPImages.length !== targetAPCount
     if (step === 2) return selectedPOSImages.length !== targetPOSCount
-    if (step === 3) return selectedImages.some(index => ratings[index]?.valence === null || ratings[index]?.arousal === null)
+    if (step === 3) {
+      if (selectedImages.length !== targetAPCount + targetPOSCount) return true
+      return selectedImages.some(index => {
+        const r = ratings[index]
+        return !r || r.valence == null || r.arousal == null
+      })
+    }
+    if (step === 4) return false
+    if (step === 5) return !hasScrolledPermissionsToBottom
     return false
   }
 
@@ -303,77 +328,27 @@ export default function OnboardingScreen() {
         </View>
       </View>
 
-      <View style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-          {step === 0 && (
-            <View style={styles.stepContainer}>
-              <Text variant="headlineSmall" style={[styles.stepTitle, { color: theme.colors.primary }]}>
-                Bienvenue dans ActivMotiv !
-              </Text>
-              <Text style={[styles.descriptionText, { color: theme.colors.onSurfaceVariant }]}>
-                {"Nous allons vous poser quelques questions afin de personnaliser au mieux votre expérience et d'adapter votre accompagnement quotidien."}
-              </Text>
-
-              <Card style={[styles.infoCard, { backgroundColor: theme.colors.elevation.level1 }]}>
-                <Card.Content>
-                  <View style={styles.infoRow}>
-                    <IconButton icon="image-multiple" size={28} iconColor={theme.colors.primary} />
-                    <View style={styles.infoTextContainer}>
-                      <Text variant="titleMedium" style={styles.infoTitle}>Etape 1 : Choix des images</Text>
-                      <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                        {"Sélectionnez des images neutres d'activités physiques et des images positives qui vous correspondent le plus"}
-                      </Text>
-                    </View>
-                  </View>
-                </Card.Content>
-              </Card>
-
-              <Card style={[styles.infoCard, { backgroundColor: theme.colors.elevation.level1, marginTop: 12 }]}>
-                <Card.Content>
-                  <View style={styles.infoRow}>
-                    <IconButton icon="clock-outline" size={28} iconColor={theme.colors.primary} />
-                    <View style={styles.infoTextContainer}>
-                      <Text variant="titleMedium" style={styles.infoTitle}>Etape 2 : Planification des rappels</Text>
-                      <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                        {"Définissez vos heures de rappels matinaux pour vos questionnaires et le port de votre capteur."}
-                      </Text>
-                    </View>
-                  </View>
-                </Card.Content>
-              </Card>
-
-              <View style={{ marginTop: 24, gap: 12 }}>
-                <Button
-                  mode="contained"
-                  onPress={handleNext}
-                  disabled={isNextDisabled()}
-                  loading={isSubmitting}
-                  style={styles.navButton}
-                >
-                  Suivant
-                </Button>
-
-                <Button
-                  mode="outlined"
-                  textColor={theme.colors.error}
-                  icon="logout"
-                  onPress={signOut}
-                  style={[styles.navButton, { borderColor: theme.colors.error }]}
-                >
-                  Se déconnecter
-                </Button>
-              </View>
-            </View>
-          )}
+      <View style={{ flex: 1, position: 'relative' }}>
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: step === 5 ? (isPermissionsAtBottom ? 20 : 90) : 20 }}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          onLayout={(e) => {
+            const h = e.nativeEvent.layout.height
+            setScrollViewHeight(h)
+            checkPermissionsAtBottom(h, scrollContentHeight, 0)
+          }}
+          onContentSizeChange={(w, h) => {
+            setScrollContentHeight(h)
+            checkPermissionsAtBottom(scrollViewHeight, h, 0)
+          }}
+        >
+          {step === 0 && <WelcomeStep handleNext={handleNext} isNextDisabled={isNextDisabled} isLoading={isSubmitting}/>}
 
           {step === 1 && (
             <ImageSelection
               title={"Sélectionnez vos images d'Activité Physique (AP)"}
-              description={
-                <Text style={[styles.descriptionText, { color: theme.colors.onSurfaceVariant }]}>
-                  {"Pour chacune des catégories proposées, choisissez 5 images qui vous paraissent les plus appropriées pour constituer un ensemble représentatif de la catégorie (5 par catégories, soit 15 au total) : "}
-                </Text>
-              }
+              description={"Pour chacune des catégories proposées, choisissez 5 images qui vous paraissent les plus appropriées pour constituer un ensemble représentatif de la catégorie (5 par catégories, soit 15 au total) : "}
               categories={[
                 { data: apExerciceCategories, title: "Exercice", targetCount: 5 },
                 { data: apLoisirsCategories, title: "Loisirs", targetCount: 5 },
@@ -383,19 +358,13 @@ export default function OnboardingScreen() {
               toggleImage={toggleAPImage}
               targetCount={targetAPCount}
               selectedCount={selectedAPImages.length}
-              theme={theme}
-              screenWidth={screenWidth}
             />
           )}
 
           {step === 2 && (
             <ImageSelection
               title={"Sélectionnez vos images Positives (POS)"}
-              description={
-                <Text style={[styles.descriptionText, { color: theme.colors.onSurfaceVariant }]}>
-                  {"Parmi toutes ces images, sélectionnez les images les plus plaisantes."}
-                </Text>
-              }
+              description={"Parmi toutes ces images, sélectionnez les images les plus plaisantes."}
               categories={[
                 { data: attachIndices(usAccomplissementImages), title: "Accomplissement" },
                 { data: attachIndices(usAnimauxImages), title: "Animaux" },
@@ -407,13 +376,11 @@ export default function OnboardingScreen() {
               toggleImage={togglePOSImage}
               targetCount={targetPOSCount}
               selectedCount={selectedPOSImages.length}
-              theme={theme}
-              screenWidth={screenWidth}
             />
           )}
 
           {step === 3 && (
-            <SAM
+            <Sam
               selectedImages={selectedImages}
               selectedAPImages={selectedAPImages}
               evaluationIndex={evaluationIndex}
@@ -424,7 +391,6 @@ export default function OnboardingScreen() {
               activeArousalList={activeArousalList}
               illustrationsList={illustrationsList}
               theme={theme}
-              screenWidth={screenWidth}
             />
           )}
 
@@ -487,7 +453,29 @@ export default function OnboardingScreen() {
               </Card>
             </View>
           )}
+
+          {step === 5 && (
+            <PermissionsStep
+              isAtBottom={isPermissionsAtBottom}
+              hasScrolledToBottom={hasScrolledPermissionsToBottom}
+            />
+          )}
         </ScrollView>
+
+        {step === 5 && !isPermissionsAtBottom && (
+          <View style={styles.floatingButtonContainer}>
+            <Button
+              mode="contained"
+              onPress={async () => await Linking.openSettings()}
+              style={[styles.floatingSettingsButton, { backgroundColor: theme.colors.primary }]}
+              icon="cog"
+              elevation={4}
+              labelStyle={{ fontWeight: 'bold', fontSize: 15, color: theme.colors.onPrimary }}
+            >
+              {"Ouvrir les Paramètres d'ActivMotiv"}
+            </Button>
+          </View>
+        )}
       </View>
 
       {step > 0 && (
@@ -651,5 +639,21 @@ const styles = StyleSheet.create({
   navButton: {
     minWidth: 110,
     borderRadius: 20
+  },
+  floatingButtonContainer: {
+    position: 'absolute',
+    bottom: 12,
+    left: 16,
+    right: 16,
+    zIndex: 100,
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+  },
+  floatingSettingsButton: {
+    paddingVertical: 6,
+    borderRadius: 24,
   }
 })

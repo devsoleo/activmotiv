@@ -1,5 +1,5 @@
 import React from 'react'
-import { StyleSheet, View, TouchableOpacity } from 'react-native'
+import { StyleSheet, View, TouchableOpacity, Dimensions } from 'react-native'
 import { Text, Card, IconButton } from 'react-native-paper'
 import { Image } from 'expo-image'
 
@@ -18,10 +18,9 @@ interface SAMProps {
   activeArousalList: ImageItem[]
   illustrationsList: ImageItem[]
   theme: any
-  screenWidth: number
 }
 
-export default function SAM({
+export default function Sam({
   selectedImages,
   selectedAPImages,
   evaluationIndex,
@@ -32,13 +31,13 @@ export default function SAM({
   activeArousalList,
   illustrationsList,
   theme,
-  screenWidth
 }: SAMProps) {
   // Count fully rated images
   const ratedCount = selectedImages.filter(globalIdx => {
     const r = ratings[globalIdx]
-    return r && r.valence !== null && r.arousal !== null
+    return r && r.valence != null && r.arousal != null
   }).length
+  const screenWidth = Dimensions.get('window').width
 
   // Styles for responsive SAM rating images
   const padding = 4

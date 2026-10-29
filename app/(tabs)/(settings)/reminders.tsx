@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useSession } from '@/contexts/auth'
 import { useReminders, useUpdateReminders } from '@/hooks/useOnboardingQueries'
 import { TimePickerModal, registerTranslation, fr } from 'react-native-paper-dates'
+import { useAdminStatus } from '@/hooks/useTrackingQueries'
 
 registerTranslation('fr', fr)
 
@@ -52,7 +53,6 @@ const DEFAULT_REMINDERS: RemindersState = {
 
 export default function RemindersScreen() {
   const router = useRouter()
-  const { accessToken } = useSession()
   const theme = useTheme()
 
   const [visible, setVisible] = useState(false)
@@ -64,19 +64,7 @@ export default function RemindersScreen() {
 
   const dismissSnackbar = () => setVisible(false)
 
-  let uid = ''
-  let isAdmin = false
-  if (accessToken != null && accessToken !== undefined) {
-    try {
-      const decoded = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())
-      uid = decoded['uid'] || ''
-      isAdmin = decoded['team'] === 0
-    } catch {
-      uid = ''
-      isAdmin = false
-    }
-  }
-
+  const { data: isAdmin = false } = useAdminStatus()
   const { data: remindersData } = useReminders()
   const updateRemindersMutation = useUpdateReminders()
 

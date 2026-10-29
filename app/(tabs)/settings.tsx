@@ -2,23 +2,15 @@ import { useRouter } from 'expo-router'
 import { StyleSheet, Linking } from 'react-native'
 import { Text, Divider, List, useTheme } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Buffer } from 'buffer'
 import { useSession } from '@/contexts/auth'
+import { useAdminStatus } from '@/hooks/useTrackingQueries'
 
 export default function SettingsScreen() {
   const theme = useTheme()
-  const { signOut, accessToken } = useSession()
+  const { signOut } = useSession()
   const router = useRouter()
 
-  let isAdmin = false
-  if (accessToken) {
-    try {
-      const payload = JSON.parse(Buffer.from(accessToken.split('.')[1], 'base64').toString())
-      isAdmin = payload['team'] === 0
-    } catch (e) {
-      console.log(e)
-    }
-  }
+  const { data: isAdmin = false } = useAdminStatus()
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
