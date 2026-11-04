@@ -14,32 +14,55 @@ export const api = axios.create({
   }
 })
 
-api.defaults.timeout = 2000
+api.defaults.timeout = 15000
+
+let isSigningOut = false
 
 api.interceptors.request.use(async (config) => {
   config.baseURL = process.env.EXPO_PUBLIC_API_URL || config.baseURL
   const accessToken = await getStorageItem('accessToken')
 
-  const isPublicRoute = config.url?.includes('/auth/login') || config.url?.includes('/auth/register')
+  const isPublicRoute =
+    config.url?.includes('/auth/login') ||
+    config.url?.includes('/auth/first-login') ||
+    config.url?.includes('/auth/logout')
 
   if (accessToken) {
     config.headers['Authorization'] = `Bearer ${accessToken}`
-  } else if (!isPublicRoute) {
-    await callSignOut()
+  } else if (!isPublicRoute && !isSigningOut) {
+    isSigningOut = true
+    try {
+      await callSignOut()
+    } finally {
+      isSigningOut = false
+    }
   }
 
   return config
 })
 
-api.interceptors.response.use((res) => {
+api.interceptors.response.use(
+  (res) => {
     return res
   },
-  (error) => {
-    if (error.response?.status === 412) {
-      console.log("Une mise à jour est nécessaire")
-      callSignOut()
+  async (error) => {
+    const status = error.response?.status
+    const isLogoutUrl = error.config?.url?.includes('/auth/logout')
+
+    if ((status === 401 || status === 403 || status === 412) && !isLogoutUrl && !isSigningOut) {
+      isSigningOut = true
+      if (status === 412) {
+        console.log('Une mise à jour est nécessaire (412)')
+      } else {
+        console.log(`Session expirée ou non autorisée (${status})`)
+      }
+      try {
+        await callSignOut()
+      } finally {
+        isSigningOut = false
+      }
     }
 
-    return Promise.reject(error)
+    throw error;
   }
 )

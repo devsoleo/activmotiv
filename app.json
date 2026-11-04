@@ -2,7 +2,7 @@
   "expo": {
     "name": "ActivMotiv",
     "slug": "activmotiv",
-    "version": "1.0.0",
+    "version": "5.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "activmotiv",
@@ -13,9 +13,9 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
       "package": "fr.devsoleo.activmotiv",
-      "versionCode": 1
+      "googleServicesFile": "./google-services.json",
+      "versionCode": 23
     },
     "web": {
       "bundler": "metro",
@@ -39,11 +39,14 @@
         "expo-build-properties",
         {
           "android": {
-            "compileSdkVersion": 36,
+            "compileSdkVersion": 37,
             "targetSdkVersion": 36,
             "buildToolsVersion": "36.0.0",
             "enableProguardInReleaseBuilds": true,
-            "enableShrinkResourcesInReleaseBuilds": true
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "kotlinVersion": "2.2.10",
+            "kspVersion": "2.2.10-2.0.2",
+            "extraProguardRules": "-keep class * extends androidx.room.RoomDatabase { <init>(); }\n-keep class com.reactnativecommunity.asyncstorage.** { *; }\n-keep @androidx.room.Database class * { *; }"
           }
         }
       ],
@@ -54,7 +57,9 @@
           "color": "#ffffff"
         }
       ],
-      "react-native-edge-to-edge"
+      "expo-font",
+      "expo-image",
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true

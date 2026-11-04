@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router'
-import { View, Linking, StyleSheet } from 'react-native'
+import { Linking, StyleSheet } from 'react-native'
 import { Text, Appbar, List, useTheme } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
 

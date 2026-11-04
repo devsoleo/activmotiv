@@ -1,5 +1,4 @@
 import { useMemo } from 'react'
-import { StyleSheet } from 'react-native'
 import { attitudeAffectiveList, attitudeInstrumentaleList, intentionList } from '@/constants/forms'
 import Form from '@/components/Form'
 import { useRouter } from 'expo-router'
@@ -42,21 +41,3 @@ export default function FormScreen() {
     />
   )
 }
-
-const styles = StyleSheet.create({
-  quoteContainer: {
-    padding: 14,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    marginVertical: 4
-  },
-  quoteText: {
-    fontStyle: 'italic',
-    lineHeight: 20
-  },
-  quoteSource: {
-    fontWeight: 'bold',
-    textAlign: 'right',
-    marginTop: 8
-  }
-})

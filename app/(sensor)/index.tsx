@@ -1,51 +1,30 @@
-import { useState, useEffect } from 'react'
 import { StyleSheet, ScrollView } from 'react-native'
 import { Text, Button, Card, useTheme, ActivityIndicator } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Image } from 'expo-image'
 import { api } from '@/services/api'
-
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 const SENSOR_IMAGE_URL = 'https://activmotiv.fr/static/notifications/sensor.png?key=b4b01d6c7472362a30ac5470aac7f6be'
 
 export default function SensorScreen() {
   const theme = useTheme()
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [checking, setChecking] = useState(true)
-  const [confirmed, setConfirmed] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const queryClient = useQueryClient()
 
-  useEffect(() => {
-    checkSensorStatus()
-  }, [])
+  const today = new Date().toDateString()
 
-  const checkSensorStatus = async () => {
-    try {
-      const response = await api.get('/sensors/today')
-      if (response.data?.confirmed) {
-        setConfirmed(true)
-      }
-    } catch (err) {
-      console.error('Erreur vérification capteur:', err)
-    } finally {
-      setChecking(false)
-    }
-  }
+  const { data, isLoading: checking } = useQuery({
+    queryKey: ['sensor-today', today],
+    queryFn: async () => (await api.get('/sensors/today')).data,
+  })
 
-  const handleConfirmSensor = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      await api.post('/sensors/validate/today')
-      setConfirmed(true)
-    } catch (err) {
-      console.error('Erreur confirmation capteur:', err)
-      setError("Impossible d'enregistrer la confirmation. Veuillez réessayer.")
-    } finally {
-      setLoading(false)
-    }
-  }
+  const confirmMutation = useMutation({
+    mutationFn: () => api.post('/sensors/validate/today'),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sensor-today'] }),
+  })
+
+  const confirmed = !!data?.confirmed || confirmMutation.isSuccess
 
   if (checking) {
     return (
@@ -88,17 +67,17 @@ export default function SensorScreen() {
                   Portez-le en continu, sauf pour la douche ou les activités pouvant l'endommager.
                 </Text>
 
-                {error && (
+                {confirmMutation.isError && (
                   <Text variant="bodySmall" style={{ color: theme.colors.error, marginBottom: 16, textAlign: 'center' }}>
-                    {error}
+                    Impossible d'enregistrer la confirmation. Veuillez réessayer.
                   </Text>
                 )}
 
                 <Button
                   mode="contained"
-                  onPress={handleConfirmSensor}
-                  loading={loading}
-                  disabled={loading}
+                  onPress={() => confirmMutation.mutate()}
+                  loading={confirmMutation.isPending}
+                  disabled={confirmMutation.isPending}
                   style={{ width: '100%', borderRadius: 12 }}
                   contentStyle={{ paddingVertical: 8 }}
                 >

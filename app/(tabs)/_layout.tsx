@@ -1,5 +1,6 @@
 import { Redirect, Stack } from 'expo-router'
 import { useSession } from '@/contexts/auth'
+import { callSignOut } from '@/contexts/authManager'
 import { View, StyleSheet } from 'react-native'
 import { Text, Button, ActivityIndicator, Icon, useTheme } from 'react-native-paper'
 import { useOnboardingStatus } from '@/hooks/useOnboardingQueries'
@@ -30,9 +31,14 @@ export default function AppLayout() {
         <Text variant="bodyMedium" style={[styles.errorMessage, { color: theme.colors.onSurfaceVariant }]}>
           Impossible de vérifier votre statut d'inscription en raison d'un problème réseau. Veuillez vérifier votre connexion Internet et réessayez.
         </Text>
-        <Button mode="contained" onPress={() => refetch()} style={styles.retryButton}>
-          Réessayer
-        </Button>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <Button mode="contained" onPress={() => refetch()} style={styles.retryButton}>
+            Réessayer
+          </Button>
+          <Button mode="outlined" onPress={() => callSignOut()} style={styles.retryButton}>
+            Se déconnecter
+          </Button>
+        </View>
       </View>
     )
   }
