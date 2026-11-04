@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.0.0"
+kotlin = "2.2.10"
 runtimeAndroid = "1.8.3"
 storage = "1.4.2"
 storageVersion = "1.5.0"

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { StyleSheet, Platform, TouchableOpacity, Image, Dimensions, KeyboardAvoidingView, View, Linking } from 'react-native'
+import { StyleSheet, TouchableOpacity, Image, Dimensions, KeyboardAvoidingView, View, Linking } from 'react-native'
 import { TextInput, Button, Text, useTheme, IconButton, Portal, Dialog, Icon } from 'react-native-paper'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'

@@ -35,7 +35,7 @@ export default function Licenses() {
       const formattedUrl = cleanUrl.startsWith('http') ? cleanUrl : `https://${cleanUrl}`
       await Linking.openURL(formattedUrl)
     } catch (error) {
-      console.warn("Impossible d'ouvrir l'URL :", url)
+      console.warn("Error :", error)
     }
   }
 

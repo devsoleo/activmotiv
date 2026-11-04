@@ -11,4 +11,11 @@
 -keep class com.swmansion.reanimated.** { *; }
 -keep class com.facebook.react.turbomodule.** { *; }
 
+# AsyncStorage v3 (Room-based)
+-keep class com.reactnativecommunity.asyncstorage.** { *; }
+
+# Room: generated *_Impl classes are instantiated reflectively
+-keep class * extends androidx.room.RoomDatabase { <init>(); }
+-keep @androidx.room.Database class * { *; }
+
 # Add any project specific keep options here:

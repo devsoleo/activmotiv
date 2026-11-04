@@ -1,4 +1,4 @@
-import { useState, useRef, createRef, ReactNode } from 'react'
+import { useState, useRef, createRef } from 'react'
 import { View, StyleSheet, ScrollView } from 'react-native'
 import { Text, Button, Card, RadioButton, useTheme, IconButton, Portal, Dialog } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -6,17 +6,17 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 export interface FormItem {
   uid: string
   content: string
-  answers: Array<{
+  answers: {
     minimum: string
     maximum: string
     size: number
-  }>
+  }[]
 }
 
 export interface FormProps {
   title: string
   list: FormItem[]
-  onSubmit: (results: Array<{ question: string; answer: any }>) => void
+  onSubmit: (results: { question: string; answer: any }[]) => void
 }
 
 export default function Form({ title, list, onSubmit }: Readonly<FormProps>) {
@@ -34,7 +34,7 @@ export default function Form({ title, list, onSubmit }: Readonly<FormProps>) {
     setAnswers(u)
   }
 
-  const scrollViewRef = useRef<ScrollView | null>(null)
+  const scrollViewRef = useRef<any>(null)
   const sectionRefs = useRef<React.RefObject<any>[]>(list.map(() => createRef()))
 
   const scrollToSection = (index: number) => {
@@ -193,7 +193,7 @@ const QuestionCard = ({ question, globalIndex, globalSize, hasSubmit, sectionRef
           Question {globalIndex + 1} / {globalSize}
         </Text>
         <Text variant="titleMedium" style={{ textAlign: 'center', marginBottom: 20, color: theme.colors.onSurface }}>
-          {question.content}
+          {question.content} :
         </Text>
 
         {question.answers.map((answer, answerIndex) => (

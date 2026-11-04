@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { View, StyleSheet, Platform, TouchableOpacity, Dimensions, Image, Alert, KeyboardAvoidingView } from 'react-native'
+import { StyleSheet, Platform, TouchableOpacity, Dimensions, Image, Alert, KeyboardAvoidingView } from 'react-native'
 import { TextInput, Text, Button, useTheme } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { api } from '@/services/api'
@@ -23,8 +23,7 @@ export default function Register() {
 
     try {
       const response = await api.post('/auth/first-login', { uid, password })
-
-      if (response.status == 200) {
+      if (response.status === 200) {
         router.replace("/(auth)/login")
       } else {
         Alert.alert('Erreur', 'Identifiants invalides')
@@ -38,7 +37,7 @@ export default function Register() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={[styles.wrapper, { backgroundColor: theme.colors.background }]}>
+    <KeyboardAvoidingView behavior={'height'} style={[styles.wrapper, { backgroundColor: theme.colors.background }]}>
       <Image
         style={{
           width: screenWidth,

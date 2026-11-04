@@ -17,7 +17,7 @@ def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 react {
     entryFile = file(["node", "-e", "require('expo/scripts/resolveAppEntry')", projectRoot, "android", "absolute"].execute(null, rootDir).text.trim())
     reactNativeDir = new File(["node", "--print", "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim()).getParentFile().getAbsoluteFile()
-    hermesCommand = new File(["node", "--print", "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim()).getParentFile().getAbsolutePath() + "/sdks/hermesc/%OS-BIN%/hermesc"
+    hermesCommand = new File(["node", "--print", "require.resolve('hermes-compiler/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim()).getParentFile().getAbsolutePath() + "/hermesc/%OS-BIN%/hermesc"
     codegenDir = new File(["node", "--print", "require.resolve('@react-native/codegen/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim()).getParentFile().getAbsoluteFile()
 
     enableBundleCompression = (findProperty('android.enableBundleCompression') ?: false).toBoolean()
@@ -70,9 +70,9 @@ react {
 }
 
 /**
- * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
+ * Set this to true in release builds to optimize the app using [R8](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization).
  */
-def enableProguardInReleaseBuilds = (findProperty('android.enableProguardInReleaseBuilds') ?: false).toBoolean()
+def enableMinifyInReleaseBuilds = (findProperty('android.enableMinifyInReleaseBuilds') ?: false).toBoolean()
 
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
@@ -99,14 +99,14 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
 
-        versionCode 22
-        versionName "4.0.0"
+        versionCode 23
+        versionName "5.0.0"
 
         buildConfigField "String", "PUBLIC_API_URL", "\"${System.getenv("EXPO_PUBLIC_API_URL")}\""
         buildConfigField "int", "VERSION_CODE", "${versionCode}"
         buildConfigField "String", "VERSION_NAME", "\"${versionName}\""
+        buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
-
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -136,16 +136,19 @@ android {
         release {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.release
-            shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
-            minifyEnabled enableProguardInReleaseBuilds
-            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
-            crunchPngs (findProperty('android.enablePngCrunchInReleaseBuilds')?.toBoolean() ?: true)
+            signingConfig signingConfigs.debug
+            def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
+            shrinkResources enableShrinkResources.toBoolean()
+            minifyEnabled enableMinifyInReleaseBuilds
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+            def enablePngCrunchInRelease = findProperty('android.enablePngCrunchInReleaseBuilds') ?: 'true'
+            crunchPngs enablePngCrunchInRelease.toBoolean()
         }
     }
     packagingOptions {
         jniLibs {
-            useLegacyPackaging (findProperty('expo.useLegacyPackaging')?.toBoolean() ?: false)
+            def enableLegacyPackaging = findProperty('expo.useLegacyPackaging') ?: 'false'
+            useLegacyPackaging enableLegacyPackaging.toBoolean()
         }
     }
     androidResources {
@@ -178,16 +181,18 @@ composeCompiler {
 }
 
 dependencies {
-    // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+
+    // Compose (ImagesActivity)
     implementation libs.androidx.runtime.android
-    implementation libs.androidx.storage
-    implementation libs.storage
     implementation libs.androidx.foundation.android
     implementation libs.androidx.foundation.layout.android
+    implementation 'androidx.activity:activity-compose:1.10.1'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3'
+
+    // Firebase
     implementation platform('com.google.firebase:firebase-bom:34.6.0')
-    implementation platform('com.google.firebase:firebase-messaging')
+    implementation 'com.google.firebase:firebase-messaging'   // plus de platform(...)
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";
@@ -215,3 +220,5 @@ dependencies {
 
     implementation 'androidx.activity:activity-compose:1.10.1'
 }
+
+apply plugin: 'com.google.gms.google-services'
