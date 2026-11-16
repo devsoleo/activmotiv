@@ -21,7 +21,11 @@ export default function SensorScreen() {
 
   const confirmMutation = useMutation({
     mutationFn: () => api.post('/sensors/validate/today'),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sensor-today'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sensor-today'] })
+      queryClient.invalidateQueries({ queryKey: ['steppers'] })
+      queryClient.invalidateQueries({ queryKey: ['tracking'] })
+    },
   })
 
   const confirmed = !!data?.confirmed || confirmMutation.isSuccess

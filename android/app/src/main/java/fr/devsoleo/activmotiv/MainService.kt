@@ -9,7 +9,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.IBinder
+import android.util.Log
+import fr.devsoleo.activmotiv.api.Api
 import fr.devsoleo.activmotiv.popup.PresenceReceiver
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 class MainService : Service() {
     private val receiver = PresenceReceiver()
@@ -17,6 +22,18 @@ class MainService : Service() {
     override fun onCreate() {
         val filter = IntentFilter(Intent.ACTION_USER_PRESENT)
         applicationContext.registerReceiver(receiver, filter)
+
+        // Pre-download popup images as soon as the service starts
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                val api = Api(applicationContext)
+                if (api.isAuthenticated()) {
+                    api.syncSamImages()
+                }
+            } catch (e: Exception) {
+                Log.e("MainService", "Error preloading popup images: ${e.message}")
+            }
+        }
     }
 
     private fun startNotification() {

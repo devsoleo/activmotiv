@@ -20,6 +20,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import android.util.Log
+import fr.devsoleo.activmotiv.api.Api
 
 class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,6 +57,17 @@ class MainActivity : ReactActivity() {
     // Popup
     val serviceIntent = Intent(applicationContext, MainService::class.java)
     applicationContext.startForegroundService(serviceIntent)
+
+    lifecycleScope.launch(Dispatchers.IO) {
+        try {
+            val api = Api(applicationContext)
+            if (api.isAuthenticated()) {
+                api.syncSamImages()
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error preloading popup images: ${e.message}")
+        }
+    }
   }
 
   override fun onNewIntent(intent: Intent) {

@@ -36,6 +36,7 @@ export default function FormScreen() {
         await enqueueForm('forms', 'daily', { results, timestamp: Date.now() })
         await queryClient.invalidateQueries({ queryKey: ['forms'] })
         await queryClient.invalidateQueries({ queryKey: ['steppers'] })
+        await queryClient.invalidateQueries({ queryKey: ['tracking'] })
         router.replace('/(tabs)')
       }}
     />

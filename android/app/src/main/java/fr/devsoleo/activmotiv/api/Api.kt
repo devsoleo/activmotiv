@@ -11,6 +11,7 @@ import java.io.File
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -124,13 +125,17 @@ class Api(private val ctx: Context) {
                 }
             }
 
-            // Pre-download unhidden images in background
+            // Pre-download unhidden images in background (or all images if hiddenMap is empty)
             GlobalScope.launch(Dispatchers.IO) {
-                for ((imageId, hidden) in hiddenMap) {
-                    if (!hidden) {
-                        val relativePath = getRelativePathForImageId(imageId)
-                        getOrDownloadBitmap(ctx, relativePath)
+                if (hiddenMap.isNotEmpty()) {
+                    for ((imageId, hidden) in hiddenMap) {
+                        if (!hidden) {
+                            val relativePath = getRelativePathForImageId(imageId)
+                            getOrDownloadBitmap(ctx, relativePath)
+                        }
                     }
+                } else {
+                    preloadAllImages(ctx)
                 }
             }
 
@@ -145,8 +150,12 @@ class Api(private val ctx: Context) {
         const val STATIC_BASE_URL = "https://activmotiv.fr/static/"
         const val STATIC_API_KEY = "b4b01d6c7472362a30ac5470aac7f6be"
 
+        // In-memory cache for popup bitmaps to keep them loaded permanently in RAM
+        private val bitmapMemoryCache = ConcurrentHashMap<String, Bitmap>()
+
         fun clearStaticCache(ctx: Context) {
             try {
+                bitmapMemoryCache.clear()
                 val cacheDir = File(ctx.cacheDir, "static_cache")
                 if (cacheDir.exists()) {
                     cacheDir.deleteRecursively()
@@ -177,7 +186,24 @@ class Api(private val ctx: Context) {
             }
         }
 
+        suspend fun preloadAllImages(ctx: Context) = withContext(Dispatchers.IO) {
+            for (imageId in 1..142) {
+                val relativePath = getRelativePathForImageId(imageId)
+                getOrDownloadBitmap(ctx, relativePath)
+            }
+        }
+
         suspend fun getOrDownloadBitmap(ctx: Context, relativePath: String): Bitmap? = withContext(Dispatchers.IO) {
+            // 1. Return from in-memory cache if already loaded
+            bitmapMemoryCache[relativePath]?.let { bitmap ->
+                if (!bitmap.isRecycled) {
+                    return@withContext bitmap
+                } else {
+                    bitmapMemoryCache.remove(relativePath)
+                }
+            }
+
+            // 2. Download from static server if file is missing from disk
             val file = File(ctx.cacheDir, "static_cache/$relativePath")
             if (!file.exists() || file.length() == 0L) {
                 file.parentFile?.mkdirs()
@@ -195,9 +221,15 @@ class Api(private val ctx: Context) {
                     Log.e("Api", "Failed to download static image $relativePath: ${e.message}")
                 }
             }
+
+            // 3. Decode bitmap and store in memory cache permanently
             if (file.exists() && file.length() > 0L) {
                 try {
-                    BitmapFactory.decodeFile(file.absolutePath)
+                    val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                    if (bitmap != null) {
+                        bitmapMemoryCache[relativePath] = bitmap
+                    }
+                    bitmap
                 } catch (e: Exception) {
                     Log.e("Api", "Error decoding bitmap from file $relativePath: ${e.message}")
                     null

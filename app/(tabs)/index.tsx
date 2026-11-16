@@ -12,10 +12,16 @@ export default function Home() {
     { key: 'settings', title: 'Paramètres', icon: 'cog-outline' },
   ])
 
-  const [scenes] = useState<Record<string, React.ReactNode>>({
-    tracking: <TrackingScreen />,
-    settings: <SettingsScreen />
-  })
+  const renderScene = ({ route }: { route: { key: string } }) => {
+    switch (route.key) {
+      case 'tracking':
+        return <TrackingScreen active={index === 0} />
+      case 'settings':
+        return <SettingsScreen />
+      default:
+        return null
+    }
+  }
 
   return (
     <BottomNavigation
@@ -25,7 +31,7 @@ export default function Home() {
         <Icon source={route.icon} size={24} color={color} />
       )}
       getLabelText={({ route }) => route.title}
-      renderScene={({ route }) => scenes[route.key]}
+      renderScene={renderScene}
     />
   )
 }

@@ -1,7 +1,7 @@
-import { View, StyleSheet, ScrollView, AppState, AppStateStatus, Dimensions, Linking } from 'react-native'
+import { View, StyleSheet, ScrollView, AppState, AppStateStatus, Dimensions, Linking, RefreshControl } from 'react-native'
 import { Text, Button, useTheme,  IconButton, Portal, Dialog, Card } from 'react-native-paper'
 import { BarChart } from "react-native-gifted-charts"
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useFocusEffect } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as Notifications from 'expo-notifications'
@@ -29,10 +29,11 @@ function formatDuration(totalMilliseconds: number | null | undefined): string {
   return `${s}s`
 }
 
-export default function TrackingScreen() {
+export default function TrackingScreen({ active = true }: { active?: boolean }) {
   const theme = useTheme()
   const { width: screenWidth } = Dimensions.get('window')
   const [infoModalVisible, setInfoModalVisible] = useState<boolean>(false)
+  const [refreshing, setRefreshing] = useState<boolean>(false)
 
   // React Query Hooks
   const { data: isAdmin = false, refetch: refetchAdminStatus } = useAdminStatus()
@@ -40,6 +41,25 @@ export default function TrackingScreen() {
   const { data: sensorSteppersData, refetch: refetchSensorSteppers } = useSensorSteppers()
   const { data: formSteppersData, refetch: refetchFormSteppers } = useFormSteppers()
   const { data: trackingData, refetch: refetchTracking } = useTrackingData()
+
+  const refetchAll = useCallback(async () => {
+    await Promise.all([
+      refetchAdminStatus(),
+      refetchFormStatus(),
+      refetchSensorSteppers(),
+      refetchFormSteppers(),
+      refetchTracking(),
+    ])
+  }, [refetchAdminStatus, refetchFormStatus, refetchSensorSteppers, refetchFormSteppers, refetchTracking])
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    try {
+      await refetchAll()
+    } finally {
+      setRefreshing(false)
+    }
+  }, [refetchAll])
 
   const formStatus = formStatusData || { inPhase: false, inTimeWindow: false, doneToday: false, nextDate: null }
 
@@ -62,6 +82,7 @@ export default function TrackingScreen() {
     try {
       await enqueueSensorToggle(stepDayIndex)
       await refetchSensorSteppers()
+      await refetchTracking()
     } catch (e) {
       console.error("Error toggling sensor day:", stepDayIndex, e)
     }
@@ -92,13 +113,13 @@ export default function TrackingScreen() {
       await Notifications.setNotificationChannelAsync('sensor', {
         name: 'Rappels de port de capteur',
         description: 'Canal SENSOR',
-        importance: Notifications.AndroidImportance.MAX
+        importance: (Notifications as any).AndroidImportance?.MAX ?? 5
       })
 
       await Notifications.setNotificationChannelAsync('form', {
         name: 'Rappels de questionnaire',
         description: 'Canal FORM',
-        importance: Notifications.AndroidImportance.MAX
+        importance: (Notifications as any).AndroidImportance?.MAX ?? 5
       })
 
       const androidId = await AsyncStorage.getItem('androidId')
@@ -108,29 +129,27 @@ export default function TrackingScreen() {
     }
   }
 
+  useEffect(() => {
+    if (active) {
+      refetchAll()
+    }
+  }, [active, refetchAll])
+
   useFocusEffect(
     useCallback(() => {
-      refetchAdminStatus()
-      refetchFormStatus()
-      refetchSensorSteppers()
-      refetchFormSteppers()
-      refetchTracking()
+      refetchAll()
       setupTelemetryAndNotifications()
 
       const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
         if (nextAppState === 'active') {
-          refetchAdminStatus()
-          refetchFormStatus()
-          refetchSensorSteppers()
-          refetchFormSteppers()
-          refetchTracking()
+          refetchAll()
         }
       })
 
       return () => {
         subscription.remove()
       }
-    }, [refetchAdminStatus, refetchFormStatus, refetchSensorSteppers, refetchFormSteppers, refetchTracking])
+    }, [refetchAll])
   )
 
   return (
@@ -148,7 +167,12 @@ export default function TrackingScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
+        }
+      >
 
         {/* Section 1 : Questionnaires */}
         {(formStatus.inPhase && formStatus.inTimeWindow && !formStatus.doneToday) || isAdmin ? (
